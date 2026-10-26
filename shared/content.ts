@@ -1,3 +1,4 @@
+import { defaultPageContent, type PageContent } from "./pageContent";
 export type Material = {
   id: string;
   title: string;
@@ -32,6 +33,8 @@ export type Manifest = {
   about: string;
   email: string;
   instagram?: string;
+  pageContent?: Partial<PageContent>;
+  teacherPhoto?: { src: string; alt: string };
   students: Student[];
   posts?: TeacherPost[];
 };
@@ -62,6 +65,13 @@ export function validateManifest(value: unknown): asserts value is Manifest {
   )
     throw new Error("Invalid manifest. Please check the blog details.");
   const ids = new Set<string>();
+  if (m.pageContent !== undefined) {
+    if (!m.pageContent || typeof m.pageContent !== "object" || Array.isArray(m.pageContent)) throw new Error("Invalid page content.");
+    for (const [key, text] of Object.entries(m.pageContent)) {
+      if (!Object.hasOwn(defaultPageContent, key) || !str(text, 2000)) throw new Error("Page texts must be between 1 and 2000 characters.");
+    }
+  }
+  if (m.teacherPhoto !== undefined && (!m.teacherPhoto || !str(m.teacherPhoto.alt, 300) || !str(m.teacherPhoto.src, 6000) || !/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(m.teacherPhoto.src))) throw new Error("Invalid teacher profile photo or description.");
   if (m.instagram !== undefined && (typeof m.instagram !== "string" || (m.instagram !== "" && !/^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._]{1,30}\/?$/.test(m.instagram))))
     throw new Error("Use a valid Instagram profile URL.");
   if (m.posts !== undefined) {

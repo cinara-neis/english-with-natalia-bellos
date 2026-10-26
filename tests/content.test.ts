@@ -7,6 +7,18 @@ const data = JSON.parse(
   readFileSync("public/content/manifest.json", "utf8"),
 ) as Manifest;
 describe("Catálogo público", () => {
+  it("accepts editable page copy and rejects unknown settings, empty copy and remote teacher images", () => {
+    const m: Manifest = structuredClone(data);
+    m.pageContent = { homeTitle: "Welcome to my lessons", contactIntro: "Ask me about lessons." };
+    expect(() => validateManifest(m)).not.toThrow();
+    m.pageContent.homeTitle = "";
+    expect(() => validateManifest(m)).toThrow("Page texts");
+    m.pageContent = JSON.parse('{"backendUrl":"https://example.com"}');
+    expect(() => validateManifest(m)).toThrow("Page texts");
+    delete m.pageContent;
+    m.teacherPhoto = { src: "https://example.com/photo.jpg", alt: "Teacher portrait" };
+    expect(() => validateManifest(m)).toThrow("teacher profile");
+  });
   it("aceita progresso e posts e rejeita percentuais fora do intervalo", () => {
     const m = structuredClone(data);
     m.students[0].progress = {

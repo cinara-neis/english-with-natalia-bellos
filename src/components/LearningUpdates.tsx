@@ -1,5 +1,6 @@
 import type { Manifest, Student } from "../../shared/content";
 import * as S from "../styles";
+import { pageContent } from "../../shared/pageContent";
 export default function LearningUpdates({
   data,
   student,
@@ -8,6 +9,7 @@ export default function LearningUpdates({
   student?: Student;
 }) {
   const students = student ? [student] : data.students;
+  const copy = pageContent(data.pageContent);
   return (
     <>
       <section
@@ -21,8 +23,7 @@ export default function LearningUpdates({
             : "Our learning progress"}
         </h2>
         <p>
-          Progress towards each student’s current learning goal, updated by the
-          teacher.
+          {copy.progressIntro}
         </p>
         <S.Grid>
           {students.map((s) => (
@@ -84,7 +85,7 @@ export default function LearningUpdates({
         style={{ marginBottom: "2rem" }}
       >
         <S.Eyebrow>FROM YOUR TEACHER</S.Eyebrow>
-        <h2 id="teacher-journal-heading">Teacher’s journal</h2>
+        <h2 id="teacher-journal-heading">{copy.journalTitle}</h2>
         {(data.posts || []).length ? (
           [...data.posts!]
             .sort((a, b) => b.date.localeCompare(a.date))

@@ -325,3 +325,26 @@ O contador vermelho sobre o botão mostra mensagens recebidas enquanto o chat es
 No admin local, a professora seleciona um aluno já salvo e usa Create or reset student password. Ela define e confirma uma senha com no mínimo 12 caracteres e a entrega ao aluno por um meio privado. A senha nunca é exibida ou gravada no manifest público; somente salt e hash ficam em .student-auth/accounts.json, fora do ZIP e do Git. Redefinir invalida sessões anteriores. O link Forgot your password? do aluno orienta procurar a professora; não simula email de recuperação.
 
 A professora autenticada pode usar Change teacher password, informando a senha atual; a troca encerra todas as sessões. Se esquecer a senha local, o dono do projeto executa npm run admin:setup no computador. Na versão publicada, a recuperação da professora é pelo GitHub. As mudanças de senha dos alunos no painel são implementadas para o editor local; no serviço online atual, STUDENT_ACCOUNTS_JSON é um segredo de configuração, e sua atualização ainda precisa ser feita pelo responsável pelo serviço. O painel publicado informa essa restrição e não apresenta uma falsa gravação.
+
+
+## Repositório deste blog
+
+https://github.com/cinara-neis/english-with-natalia-bellos
+
+Envie os arquivos do projeto para a raiz do repositório, incluindo .github/workflows/pages.yml. Em Settings > Pages > Build and deployment > Source, selecione GitHub Actions. O workflow usa automaticamente o nome do repositório como caminho de publicação. A URL esperada após um deploy bem-sucedido é https://cinara-neis.github.io/english-with-natalia-bellos/ . A criação do repositório por si só não publica o site nem ativa os serviços de autenticação e chat.
+
+
+## Autonomia da professora: conteúdo pelo painel
+
+A professora mantém textos, contatos, alunos, metas, publicações e materiais pelo Teacher login. O responsável técnico mantém código, layout, integrações, hospedagem, credenciais e permissões de backend. O painel não permite alterar servidores, scripts, CSS, workflows ou segredos.
+
+Novos controles:
+
+- **Page texts and image:** títulos e introduções da Home, páginas dos alunos e Contact; título da biblioteca, lembrete de estudo, texto do progresso, título do diário, frases da lateral, legenda do cabeçalho e rodapé. O texto About continua em Your blog, junto aos contatos.
+- **Teacher profile image:** upload de miniatura JPG/PNG/WebP de até 5 MB, com descrição acessível; a imagem é reduzida antes de entrar no manifest. A ilustração original pode ser restaurada.
+- **Edit or replace:** materiais existentes podem ter título, texto e descrição corrigidos. PDF e Word são atualizados enviando uma nova versão do arquivo; o painel não é um editor de Word/PDF. A substituição preserva o ID do material e troca o caminho para um arquivo novo, dentro dos mesmos limites de upload. O arquivo antigo sai da versão atual após salvar, mas permanece no histórico do Git.
+- As mudanças são rascunhos até **Save all to project** (local) ou **Publish all changes** (online). O formulário de prévia mostra os textos antes de salvar, sem simular publicação.
+
+Esses controles usam o manifest validado e o mesmo endpoint autenticado de publicação existente, tanto localmente quanto no Worker configurado. Não há novo banco ou credenciais no frontend. A professora só terá autonomia no site publicado após o responsável técnico configurar a GitHub App/Worker e VITE_ADMIN_API; editar o projeto local não atualiza automaticamente o repositório remoto. A gestão de senhas dos alunos no modo hospedado continua sendo a limitação documentada anteriormente.
+
+Validação desta ampliação: 30 testes, checagem TypeScript do frontend e Worker e compilação de produção.

@@ -22,6 +22,7 @@ import LearningUpdates from "./components/LearningUpdates";
 import LearnerSpace from "./components/LearnerSpace";
 import LiveChat from "./components/LiveChat";
 import ContactForm from "./components/ContactForm";
+import { pageContent } from "../shared/pageContent";
 type Page = "home" | "about" | "contact" | "admin";
 function route(): Page {
   const p = location.hash
@@ -96,6 +97,7 @@ export default function App() {
     };
   }, []);
   const student = data?.students.find((s) => s.id === selected);
+  const copy = pageContent(data?.pageContent);
   const items = (
     student
       ? student.materials
@@ -129,13 +131,13 @@ export default function App() {
         <S.Side>
           <S.Brand>
             <img
-              src={`${base}teacher.svg`}
-              alt="Illustration of a smiling teacher holding a book"
+              src={data?.teacherPhoto?.src || `${base}teacher.svg`}
+              alt={data?.teacherPhoto?.alt || "Illustration of a smiling teacher holding a book"}
             />
             <p className="blog-name">
               {data?.blogName || "English with Natalia Bellos"}
             </p>
-            <p>A LITTLE ENGLISH, EVERY DAY.</p>
+            <p>{copy.tagline}</p>
           </S.Brand>
           <nav aria-labelledby="students-label">
             <S.StudentNavigation
@@ -181,15 +183,13 @@ export default function App() {
             </details>
           )}
           <S.TeacherNote>
-            “Every little step
-            <br />
-            is progress.”<small>LET’S GROW TOGETHER ♡</small>
+            “{copy.sidebarQuote}”<small>{copy.sidebarCaption}</small>
           </S.TeacherNote>
         </S.Side>
         <div>
           <S.Header>
             <span style={{ fontFamily: "Georgia", fontSize: "1rem" }}> <span style={{ color: "#b11b9d" }}> ✳ </span> 
-              The learning journal<span style={{ color: "#b11b9d" }}> ✳</span>
+              {copy.headerCaption}<span style={{ color: "#b11b9d" }}> ✳</span>
             </span>
             <nav aria-label="Main navigation">
               {(["home", "about", "contact"] as const).map((p) => (
@@ -239,21 +239,14 @@ export default function App() {
                 <h1>Hello! I’m {data.teacher}.</h1>
                 <p style={{ whiteSpace: "pre-wrap" }}>{data.about}</p>
                 <S.Chip>
-                  <BookOpen size={14} /> English at your own pace
+                  <BookOpen size={14} /> {copy.aboutBadge}
                 </S.Chip>
               </S.Panel>
             ) : page === "contact" ? (
               <S.Panel>
                 <S.Eyebrow>LET’S TALK</S.Eyebrow>
-                <h1>
-                  A conversation can
-                  <br />
-                  be the first step.
-                </h1>
-                <p>
-                  Get in touch with the teacher to learn more about private
-                  English lessons.
-                </p>
+                <h1 style={{ whiteSpace: "pre-line" }}>{copy.contactTitle}</h1>
+                <p>{copy.contactIntro}</p>
                 <ContactForm email={data.email} />
                 {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email) && !data.email.endsWith("@example.com") ? (
                   <S.Button as="a" href={`mailto:${data.email}`}>
@@ -267,30 +260,28 @@ export default function App() {
               </S.Panel>
             ) : (
               <>
-                <S.Eyebrow>WELCOME TO OUR LITTLE CORNER</S.Eyebrow>
+                <S.Eyebrow>{copy.homeEyebrow}</S.Eyebrow>
                 <S.Hero>
                   <div>
                     <S.Chip>
-                      <Sparkles size={12} /> Learning can feel light
+                      <Sparkles size={12} /> {copy.homeBadge}
                     </S.Chip>
                     <h1>
                       {student ? (
                         <>
                           Hello, {student.name.split(" ")[0]}!<br />
-                          Let’s keep growing.
+                          {copy.studentTitle}
                         </>
                       ) : (
                         <>
-                          Small steps.
-                          <br />
-                          Big discoveries.
+                          <span style={{ whiteSpace: "pre-line" }}>{copy.homeTitle}</span>
                         </>
                       )}
                     </h1>
                     <p>
                       {student
-                        ? "Your materials, activities and new discoveries are here. One step at a time, always moving forward."
-                        : "A space to learn, practise and celebrate every English milestone. Ready to begin?"}
+                        ? copy.studentIntro
+                        : copy.homeIntro}
                     </p>
                   </div>
                   <Garden />
@@ -306,7 +297,7 @@ export default function App() {
                     <h2 style={{ margin: 0 }}>
                       {student
                         ? "Materials for " + student.name
-                        : "Our learning collection"}{" "}
+                        : copy.collectionTitle}{" "}
                       <span
                         style={{ font: "0.875rem Arial", color: "#526147" }}
                       >
@@ -457,8 +448,7 @@ export default function App() {
                   </S.Panel>
                 )}
                 <S.Notice>
-                  <Leaf size={15} /> A little practice goes a long way. Take a
-                  few minutes to practise today.
+                  <Leaf size={15} /> {copy.practiceNote}
                 </S.Notice>
               </>
             )}
@@ -467,7 +457,7 @@ export default function App() {
                 © {new Date().getFullYear()}{" "}
                 {data?.blogName || "English with Natalia Bellos"}
               </span>
-              <span>Made with care. Shared with love. ♡</span>
+              <span>{copy.footer}</span>
             </S.Footer>
           </S.Main>
         </div>

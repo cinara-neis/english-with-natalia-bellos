@@ -20,6 +20,8 @@ import TeacherAccess from "./TeacherAccess";
 import TeacherPostEditor from "./TeacherPostEditor";
 import StudentProgressEditor from "./StudentProgressEditor";
 import PasswordManager from "./PasswordManager";
+import PageContentEditor from "./PageContentEditor";
+import MaterialEditor from "./MaterialEditor";
 type UploadData = { path: string; content: string };
 export default function Admin({ publicData }: { publicData: Manifest }) {
   const [session, setSession] = useState("");
@@ -195,11 +197,36 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
       if (localEditing) window.dispatchEvent(new Event("blog-content-saved"));
     });
   }
+  async function editMaterial(original: Material, next: Material, replacement?: File) {
+    if (!chosen) throw Error("Select a student.");
+    setBusy(true);
+    try {
+      let updated = { ...next };
+      const referenced = new Set(draft.students.flatMap(s => s.materials.map(m => m.path)));
+      let nextUploads = uploads.filter(u => referenced.has(u.path));
+      if (replacement) {
+        const kind = fileKind(replacement.name);
+        if (!kind || !replacement.size || replacement.size > MAX_FILE) throw Error("Choose a supported file up to 2 MiB.");
+        nextUploads = nextUploads.filter(u => u.path !== original.path);
+        if (nextUploads.length >= 5) throw Error("Save your pending files before replacing more.");
+        const path = `content/uploads/${crypto.randomUUID()}.${replacement.name.split(".").pop()!.toLowerCase()}`;
+        updated = { ...updated, kind, path };
+        delete updated.text;
+        if (kind !== "image") delete updated.alt;
+        nextUploads = [...nextUploads, { path, content: await asBase64(replacement) }];
+      }
+      const nextDraft = { ...draft, students: draft.students.map(s => s.id === chosen.id ? { ...s, materials: s.materials.map(m => m.id === original.id ? updated : m) } : s) };
+      validateManifest(nextDraft);
+      change(nextDraft);
+      setUploads(nextUploads);
+      setPendingAnnouncement("Material updated in draft. Save or publish all changes to update the site.");
+    } finally { setBusy(false); }
+  }
   return (
     <>
       <S.Eyebrow>TEACHER’S DESK</S.Eyebrow>
       <h1>A space to create.</h1>
-      <p>Organise your students and share new discoveries.</p>
+      <p>Manage your pages, contacts, students and learning materials here. Your site administrator takes care of the technical setup.</p>
       {session && <TeacherAccess />}
       {!session && <details style={{ marginBottom: "1rem" }}><summary style={{ cursor: "pointer" }}>Forgot your teacher password?</summary><p>{localEditing ? "The project owner can reset teacher access by running npm run admin:setup on this computer. A visitor cannot reset it through this public page." : "Teacher access uses your authorised GitHub account. Recover that account through GitHub."}</p>{!localEditing && <a href="https://github.com/password_reset" target="_blank" rel="noopener noreferrer">Recover GitHub account (opens in a new tab)</a>}</details>}
       {session && <PasswordManager session={session} onTeacherChanged={() => { setSession(""); setMessage("Password changed. Sign in with your new teacher password."); }} />}
@@ -209,6 +236,8 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
             ["student-tools", "Student documents"],
             ["progress-editor-heading", "Learning progress"],
             ["journal-editor-heading", "Homepage posts"],
+            ["page-content-heading", "Page texts and image"],
+            ["blog-details-heading", "Contacts and About"],
           ].map(([id, label]) => (
             <S.Button
               key={id}
@@ -496,6 +525,7 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                     <span>
                       {a.title} <small>({a.kind})</small>
                     </span>
+                    <MaterialEditor material={a} onSave={(next, replacement) => editMaterial(a, next, replacement)} />
                     <S.LinkButton
                       aria-label={`Delete ${a.title}`}
                       onClick={() => {
@@ -543,8 +573,9 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
               onChange={change}
               onNotice={setPendingAnnouncement}
             />
+            <PageContentEditor draft={draft} onChange={change} />
             <S.Panel>
-              <h2>Your blog</h2>
+              <h2 id="blog-details-heading" tabIndex={-1}>Your blog</h2>
               <label htmlFor="blogName">Blog name</label>
               <input
                 id="blogName"

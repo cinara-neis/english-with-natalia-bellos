@@ -102,6 +102,10 @@ describe("Real local project storage", () => {
       const first = await request("/content");
       expect(first.status).toBe(200);
       const manifest = structuredClone(first.data.manifest);
+      manifest.pageContent = { homeTitle: "New lesson season", contactIntro: "Contact Natalia for your next lesson." };
+      manifest.about = "My updated teacher introduction.";
+      manifest.email = "teacher@example.com";
+      manifest.students[0].materials[0].text = "An updated activity from the teacher.";
       manifest.students[0].materials.push({
         id: "local-lesson",
         title: "Local lesson",
@@ -130,6 +134,10 @@ describe("Real local project storage", () => {
         ),
       );
       expect(disk.students[0].materials.at(-1).title).toBe("Local lesson");
+      expect(disk.pageContent.homeTitle).toBe("New lesson season");
+      expect(disk.email).toBe("teacher@example.com");
+      expect(disk.about).toBe("My updated teacher introduction.");
+      expect(disk.students[0].materials[0].text).toBe("An updated activity from the teacher.");
       expect(disk.students[1]).toEqual(fixture.students[1]);
       expect(
         await fs.readFile(
