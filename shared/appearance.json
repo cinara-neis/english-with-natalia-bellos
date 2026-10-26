@@ -1,0 +1,15 @@
+{
+  "fonts": {
+    "classic": {"label":"Classic","css":"Georgia, 'Times New Roman', serif"},
+    "modern": {"label":"Modern","css":"Arial, Helvetica, sans-serif"},
+    "rounded": {"label":"Friendly","css":"'Trebuchet MS', Arial, sans-serif"},
+    "mono": {"label":"Typewriter","css":"'Courier New', monospace"}
+  },
+  "backgrounds": {
+    "sage": {"label":"Sage","background":"#eef1e7","text":"#293b36"},
+    "sky": {"label":"Sky","background":"#eaf2fa","text":"#253e56"},
+    "rose": {"label":"Rose","background":"#faedf0","text":"#52323c"},
+    "sand": {"label":"Sand","background":"#f3eddc","text":"#493d28"},
+    "lavender": {"label":"Lavender","background":"#f0edf8","text":"#3d3455"}
+  }
+}

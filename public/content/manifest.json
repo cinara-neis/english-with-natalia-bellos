@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "blogName": "English with Natalia Bellos",
+  "teacher": "Natalia Bellos",
+  "about": "I’m Teacher Natalia Bellos, and I believe learning English helps us discover new ways to connect with the world.\n\nIn our private lessons, every student learns at their own pace. This blog brings together activities, readings and small milestones along the way.\n\nThis is a starter project. Replace this introduction and the illustration with your teacher’s details.",
+  "email": "natalia.bellos@example.com",
+  "students": [
+    {
+      "id": "ana",
+      "name": "Ana Beatriz",
+      "level": "A1 · Beginner",
+      "materials": [
+        {
+          "id": "ana-hello",
+          "title": "A little about me",
+          "kind": "text",
+          "date": "2026-10-20",
+          "text": "Hello! My name is Ana. I am learning English, one little step at a time.\n\nYour turn: write three sentences about yourself.\n1. My name is…\n2. I like…\n3. My favourite place is…\n\nTeacher’s tip: read your sentences out loud. Progress does not have to be perfect!"
+        },
+        {
+          "id": "ana-words",
+          "title": "Everyday words, little discoveries",
+          "kind": "pdf",
+          "date": "2026-10-19",
+          "path": "content/uploads/everyday-words.pdf"
+        }
+      ]
+    },
+    {
+      "id": "matheus",
+      "name": "Matheus Lima",
+      "level": "A2 · Elementary",
+      "materials": [
+        {
+          "id": "matheus-routine",
+          "title": "My morning routine",
+          "kind": "docx",
+          "date": "2026-10-18",
+          "path": "content/uploads/morning-routine.docx"
+        },
+        {
+          "id": "matheus-picture",
+          "title": "Look, describe & imagine",
+          "kind": "image",
+          "date": "2026-10-17",
+          "path": "content/uploads/learning-desk.png",
+          "alt": "A desk with an open book on the left and a potted green plant on the right. Activity: describe what you can see in five English sentences."
+        }
+      ]
+    },
+    {
+      "id": "pedro",
+      "name": "Pedro Santos",
+      "level": "B1 · Intermediate",
+      "materials": [
+        {
+          "id": "pedro-weekend",
+          "title": "A weekend worth sharing",
+          "kind": "text",
+          "date": "2026-10-16",
+          "text": "Think about a weekend you enjoyed. Where did you go? Who were you with? What made it special?\n\nWrite a short paragraph using the past tense. Try these words: first, then, after that, finally.\n\nRead your paragraph out loud and underline three words you want to practice. We will talk about your story in our next class."
+        }
+      ]
+    }
+  ],
+  "instagram": "https://www.instagram.com/example/"
+}

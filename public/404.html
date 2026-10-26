@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Page not found</title>
+  <body>
+    <p>This page could not be found. Return to the blog homepage.</p>
+    <script>
+      // O GitHub Pages entrega este arquivo para URLs diretas de SPA.
+      const match = location.pathname.match(/\/(admin|about|contact)\/?$/);
+      if (match)
+        location.replace(
+          location.pathname.slice(0, match.index + 1) + "#/" + match[1],
+        );
+    </script>
+  </body>
+</html>

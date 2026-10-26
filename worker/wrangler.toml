@@ -1,0 +1,17 @@
+name = "english-teacher-admin"
+main = "index.ts"
+compatibility_date = "2025-02-14"
+workers_dev = true
+
+# Sem KV, D1, R2 ou qualquer banco de dados.
+[vars]
+FRONTEND_URL = "https://SEU_USUARIO.github.io/english-with-clara/"
+GITHUB_OWNER = "SEU_USUARIO"
+GITHUB_REPO = "english-with-clara"
+GITHUB_BRANCH = "main"
+GITHUB_CLIENT_ID = "CLIENT_ID_DA_GITHUB_APP"
+ALLOWED_LOGIN = "SEU_USUARIO"
+
+# Segredos via wrangler secret put --config worker/wrangler.toml:
+# GITHUB_CLIENT_SECRET
+# SESSION_SECRET (32 bytes aleatórios em base64)
