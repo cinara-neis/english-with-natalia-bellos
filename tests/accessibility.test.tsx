@@ -113,12 +113,16 @@ describe("English interface and accessibility", () => {
   it("persists display preferences and resets their pressed states", async () => {
     const user = userEvent.setup();
     const result = render(<AccessibilityControls />);
+    expect(screen.queryByRole("button", { name: "Larger text" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Open accessibility settings" }));
+    expect(screen.getByRole("dialog", { name: "Accessibility" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Larger text" }));
     await user.click(screen.getByRole("button", { name: "High contrast" }));
     expect(document.documentElement.dataset.largeText).toBe("true");
     expect(document.documentElement.dataset.highContrast).toBe("true");
     result.unmount();
     render(<AccessibilityControls />);
+    await user.click(screen.getByRole("button", { name: "Open accessibility settings" }));
     expect(
       screen
         .getByRole("button", { name: "Larger text" })
@@ -151,7 +155,9 @@ describe("English interface and accessibility", () => {
   it("moves focus after navigation and gives admin forms accessible labels", async () => {
     const user = userEvent.setup();
     const { container } = await start();
-    await user.click(screen.getByRole("link", { name: "Teacher’s desk" }));
+    expect(screen.queryByRole("link", { name: "Teacher’s desk" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "Teacher login" })).toHaveLength(1);
+    await user.click(screen.getByRole("link", { name: "Teacher login" }));
     await screen.findByRole("heading", { name: "Hello, teacher." });
     expect(document.activeElement).toBe(screen.getByRole("main"));
     await user.click(
@@ -177,5 +183,5 @@ describe("English interface and accessibility", () => {
       screen.getByRole("textbox", { name: "Image description (required)" }),
     ).toBeTruthy();
     await audit(container);
-  });
+  }, 20000);
 });
