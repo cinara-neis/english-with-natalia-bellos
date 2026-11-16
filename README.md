@@ -366,3 +366,15 @@ O build recusa catálogos com níveis em texto aberto. A publicação atualizada
 Em **Student login → My files**, o aluno envia PDF, Word ou imagem (até 2 MiB por arquivo, até 20 arquivos). O envio começa privado. **Publish** exige confirmação e inclui o download na página do aluno. **Remove from public page** retira o download público sem apagar o arquivo. A professora pode consultar os arquivos do aluno selecionado em **Files shared with you**. Cada download é autorizado no servidor; o site não entrega URLs do armazenamento privado. Cópias já baixadas não podem ser recolhidas. Os materiais antigos publicados pelo painel da professora continuam separados.
 
 Localmente, os arquivos ficam em `.student-auth/student-files/`, fora do site e do Git. Para o modo hospedado, crie um repositório **privado**, inicializado com README, na mesma conta do blog. Autorize a GitHub App do serviço Node a ler e escrever nesse repositório, mantendo-o privado. Configure `STUDENT_FILES_REPO` com o nome do repositório privado e `TEACHER_ADMIN_API` com a origem HTTPS do Worker de administração no serviço Node. Publique as versões atualizadas do serviço Node, do Worker e do site. O Worker valida a sessão da professora, e o serviço Node consulta o repositório privado. Sem a configuração, o upload não é ativado no site publicado. Não inclua os arquivos privados na publicação do Pages.
+
+
+## Login online da professora por e-mail e senha
+
+A professora usa **Teacher login** no blog. O GitHub App instalado somente no repositório do blog publica nos bastidores, sem exigir uma conta GitHub da professora. O modo local continua usando a senha de desenvolvimento. O modo GitHub anterior continua disponível enquanto `TEACHER_EMAIL` não estiver configurado.
+
+1. No GitHub App, obtenha **App ID** e **Installation ID**, e gere uma chave privada. Configure `GITHUB_APP_ID`, `GITHUB_INSTALLATION_ID` e `GITHUB_PRIVATE_KEY` no Worker. A permissão necessária é Contents: Read and write. A autenticação pede um token restrito ao repositório definido em `GITHUB_REPO`.
+2. No terminal local, rode `node scripts/generate-teacher-password.mjs`. Ele cria uma senha aleatória de 32 caracteres para entregar à professora em particular, e um valor separado para o segredo `TEACHER_PASSWORD_HASH`. Não envie o terminal ou a senha ao GitHub ou ao chat.
+3. Configure no Cloudflare o e-mail da professora como `TEACHER_EMAIL` e o hash como `TEACHER_PASSWORD_HASH`. Mantenha o `SESSION_SECRET` e os segredos dos níveis já configurados. Publique o Worker atualizado com a regra de limite de tentativas do `wrangler.toml` e publique o frontend. Não use variáveis VITE para credenciais.
+4. Teste o **Teacher login** online com a professora. Para redefinir, gere outra senha e substitua o hash no Worker. A alteração invalida as sessões antigas. A professora pode guardar a senha num gerenciador de senhas para evitar digitá-la sempre.
+
+Não use uma senha escolhida manualmente com este modo: o formato e o armazenamento foram projetados para a senha de alta entropia produzida pelo gerador.

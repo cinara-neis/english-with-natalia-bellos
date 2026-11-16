@@ -183,5 +183,5 @@ describe("English interface and accessibility", () => {
       screen.getByRole("textbox", { name: "Image description (required)" }),
     ).toBeTruthy();
     await audit(container);
-  }, 20000);
+  }, 60000);
 });

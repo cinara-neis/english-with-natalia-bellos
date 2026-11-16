@@ -3,6 +3,11 @@ main = "index.ts"
 compatibility_date = "2025-02-14"
 workers_dev = true
 
+[[ratelimits]]
+name = "TEACHER_LOGIN_LIMIT"
+namespace_id = "1601"
+simple = { limit = 6, period = 60 }
+
 # Sem KV, D1, R2 ou qualquer banco de dados.
 [vars]
 FRONTEND_URL = "https://cinara-neis.github.io/english-with-natalia-bellos/"

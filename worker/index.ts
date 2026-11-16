@@ -15,6 +15,12 @@ export interface Env {
   SESSION_SECRET: string;
   STUDENT_LEVELS_KEY?: string;
   ALLOWED_LOGIN: string;
+  TEACHER_EMAIL?: string;
+  TEACHER_PASSWORD_HASH?: string;
+  TEACHER_LOGIN_LIMIT?: { limit(input: { key: string }): Promise<{ success: boolean }> };
+  GITHUB_APP_ID?: string;
+  GITHUB_INSTALLATION_ID?: string;
+  GITHUB_PRIVATE_KEY?: string;
 }
 class HttpError extends Error {
   constructor(
@@ -25,6 +31,7 @@ class HttpError extends Error {
   }
 }
 type Session = { type: "session"; token: string; exp: number };
+type PasswordSession = { type: "teacher-password"; version: string; exp: number };
 type State = { type: "state"; nonce: string; verifier: string; exp: number };
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -48,7 +55,7 @@ async function key(env: Env) {
     "decrypt",
   ]);
 }
-async function seal(value: Session | State, env: Env) {
+async function seal(value: Session | State | PasswordSession, env: Env) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv, additionalData: enc.encode("teacher-admin-v1") },
@@ -57,7 +64,7 @@ async function seal(value: Session | State, env: Env) {
   );
   return b64(iv) + "." + b64(new Uint8Array(encrypted));
 }
-async function open(s: string, env: Env): Promise<Session | State> {
+async function open(s: string, env: Env): Promise<Session | State | PasswordSession> {
   try {
     const [iv, data, ...rest] = s.split(".");
     if (rest.length) throw Error();
@@ -79,12 +86,36 @@ async function open(s: string, env: Env): Promise<Session | State> {
   } catch {
     throw new HttpError(
       401,
-      "Invalid or expired session. Sign in with GitHub again.",
+      "Invalid or expired session. Sign in again.",
     );
   }
 }
 function root(env: Env) {
   return `/repos/${encodeURIComponent(env.GITHUB_OWNER)}/${encodeURIComponent(env.GITHUB_REPO)}`;
+}
+const passwordMode = (env: Env) => !!env.TEACHER_EMAIL;
+const passwordVersion = (env: Env) => env.TEACHER_EMAIL?.trim().toLowerCase() + ":" + env.TEACHER_PASSWORD_HASH;
+function der(tag: number, data: Uint8Array) {
+  const size = data.length;
+  return new Uint8Array([tag, ...(size < 128 ? [size] : size < 256 ? [0x81, size] : [0x82, size >> 8, size & 255]), ...data]);
+}
+async function installationToken(env: Env) {
+  const pem = env.GITHUB_PRIVATE_KEY?.replaceAll("\\n", "\n");
+  if (!pem || !env.GITHUB_APP_ID || !env.GITHUB_INSTALLATION_ID) throw new HttpError(503, "Teacher publishing is not configured.");
+  let bytes = unb64(pem.replace(/-----[^-]+-----|\s/g, ""));
+  if (pem.includes("BEGIN RSA PRIVATE KEY")) {
+    bytes = der(0x30, new Uint8Array([0x02, 0x01, 0, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0, ...der(0x04, bytes)]));
+  }
+  const signingKey = await crypto.subtle.importKey("pkcs8", bytes, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  const now = Math.floor(Date.now() / 1000);
+  const data = url64(enc.encode(JSON.stringify({ alg: "RS256", typ: "JWT" }))) + "." +
+    url64(enc.encode(JSON.stringify({ iat: now - 60, exp: now + 540, iss: env.GITHUB_APP_ID })));
+  const signature = url64(new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", signingKey, enc.encode(data))));
+  const response = await gh(`/app/installations/${encodeURIComponent(env.GITHUB_INSTALLATION_ID)}/access_tokens`, data + "." + signature, "POST", {
+    repositories: [env.GITHUB_REPO], permissions: { contents: "write" },
+  });
+  if (typeof response.token !== "string") throw new HttpError(503, "Teacher publishing is not configured.");
+  return response.token as string;
 }
 async function gh(
   path: string,
@@ -145,6 +176,11 @@ async function auth(request: Request, env: Env) {
     (request.headers.get("Authorization") || "").replace(/^Bearer /, ""),
     env,
   );
+  if (passwordMode(env)) {
+    if (value.type !== "teacher-password" || value.version !== passwordVersion(env))
+      throw new HttpError(401, "Sign in again.");
+    return installationToken(env);
+  }
   if (value.type !== "session")
     throw new HttpError(401, "Sign in with GitHub.");
   await identify(value.token, env);
@@ -211,7 +247,7 @@ export function verifyFile(path: string, content: string) {
   if (!valid)
     throw new HttpError(400, "The file content does not match its extension.");
 }
-async function limitedJson(request: Request) {
+async function limitedJson(request: Request, limit = 15 * 1024 * 1024) {
   const reader = request.body?.getReader();
   if (!reader) throw new HttpError(400, "Empty request.");
   const chunks: Uint8Array[] = [];
@@ -220,7 +256,7 @@ async function limitedJson(request: Request) {
     const { value, done } = await reader.read();
     if (done) break;
     total += value.length;
-    if (total > 15 * 1024 * 1024) {
+    if (total > limit) {
       await reader.cancel();
       throw new HttpError(
         413,
@@ -362,6 +398,8 @@ export default {
       "X-Content-Type-Options": "nosniff",
     };
     try {
+      if (passwordMode(env) && url.pathname.startsWith("/auth/"))
+        throw new HttpError(404, "Use email and password on the blog.");
       if (url.pathname === "/auth/start" && request.method === "GET") {
         const nonce = url64(crypto.getRandomValues(new Uint8Array(32))),
           verifier = url64(crypto.getRandomValues(new Uint8Array(32)));
@@ -458,6 +496,26 @@ export default {
         throw new HttpError(403, "Origin not authorised.");
       if (request.method === "OPTIONS")
         return new Response(null, { status: 204, headers: cors });
+      if (url.pathname === "/status" && request.method === "GET") {
+        return Response.json({ mode: passwordMode(env) ? "password" : "github" }, { headers: cors });
+      }
+      if (url.pathname === "/login" && request.method === "POST" && passwordMode(env)) {
+        if (!env.TEACHER_LOGIN_LIMIT || !/^[a-f0-9]{64}$/.test(env.TEACHER_PASSWORD_HASH || ""))
+          throw new HttpError(503, "Teacher sign-in is not configured.");
+        const { success } = await env.TEACHER_LOGIN_LIMIT.limit({ key: request.headers.get("CF-Connecting-IP") || "unknown" });
+        if (!success) throw new HttpError(429, "Too many attempts. Try again in a minute.");
+        const body = await limitedJson(request, 2048);
+        const password = typeof body?.password === "string" ? body.password : "";
+        const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+        if (!/^[A-Za-z0-9_-]{32}$/.test(password)) throw new HttpError(401, "Incorrect email or password.");
+        const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(password)));
+        const expected = Uint8Array.from(env.TEACHER_PASSWORD_HASH!.match(/../g)!, hex => parseInt(hex, 16));
+        let diff = 0;
+        for (let i = 0; i < digest.length; i++) diff |= digest[i] ^ expected[i];
+        if (diff || email !== env.TEACHER_EMAIL!.trim().toLowerCase()) throw new HttpError(401, "Incorrect email or password.");
+        const session = await seal({ type: "teacher-password", version: passwordVersion(env), exp: Date.now() + 3600000 }, env);
+        return Response.json({ session }, { headers: cors });
+      }
       if (url.pathname === "/teacher-session" && request.method === "GET") {
         await auth(request, env);
         return Response.json({ teacherSession: true }, { headers: cors });

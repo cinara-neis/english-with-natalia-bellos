@@ -28,6 +28,8 @@ type UploadData = { path: string; content: string };
 export default function Admin({ publicData }: { publicData: Manifest }) {
   const [session, setSession] = useState("");
   const [localPassword, setLocalPassword] = useState("");
+  const [teacherEmail, setTeacherEmail] = useState("");
+  const [onlinePassword, setOnlinePassword] = useState(false);
   const [localConfigured, setLocalConfigured] = useState<boolean | null>(null);
   const [draft, setDraft] = useState<Manifest>(publicData);
   const [head, setHead] = useState("");
@@ -53,6 +55,8 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
       adminRequest("/status", "")
         .then((r) => setLocalConfigured(r.configured === true))
         .catch((e) => setError(e.message));
+    else if (api)
+      adminRequest("/status", "").then(r => setOnlinePassword(r.mode === "password")).catch(() => {});
   }, []);
   useEffect(() => {
     const leave = (e: BeforeUnloadEvent) => {
@@ -84,9 +88,9 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
   function connect() {
     void task(async () => {
       let s: string;
-      if (localEditing) {
+      if (localEditing || onlinePassword) {
         try {
-          s = (await adminRequest("/login", "", { password: localPassword }))
+          s = (await adminRequest("/login", "", { email: teacherEmail, password: localPassword }))
             .session;
         } finally {
           setLocalPassword("");
@@ -229,9 +233,9 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
       <S.Eyebrow>TEACHER’S DESK</S.Eyebrow>
       <h1>A space to create.</h1>
       <p>Manage your pages, contacts, students and learning materials here. Your site administrator takes care of the technical setup.</p>
-      {session && <TeacherAccess />}
-      {!session && <details style={{ marginBottom: "1rem" }}><summary style={{ cursor: "pointer" }}>Forgot your teacher password?</summary><p>{localEditing ? "The project owner can reset teacher access by running npm run admin:setup on this computer. A visitor cannot reset it through this public page." : "Teacher access uses your authorised GitHub account. Recover that account through GitHub."}</p>{!localEditing && <a href="https://github.com/password_reset" target="_blank" rel="noopener noreferrer">Recover GitHub account (opens in a new tab)</a>}</details>}
-      {session && <PasswordManager session={session} onTeacherChanged={() => { setSession(""); setMessage("Password changed. Sign in with your new teacher password."); }} />}
+      {session && <TeacherAccess onlinePassword={onlinePassword} />}
+      {!session && <details style={{ marginBottom: "1rem" }}><summary style={{ cursor: "pointer" }}>Forgot your teacher password?</summary><p>{localEditing ? "The project owner can reset teacher access by running npm run admin:setup on this computer. A visitor cannot reset it through this public page." : onlinePassword ? "Ask the site administrator to reset your teacher password." : "Teacher access uses your authorised GitHub account. Recover that account through GitHub."}</p>{!localEditing && !onlinePassword && <a href="https://github.com/password_reset" target="_blank" rel="noopener noreferrer">Recover GitHub account (opens in a new tab)</a>}</details>}
+      {session && !onlinePassword && <PasswordManager session={session} onTeacherChanged={() => { setSession(""); setMessage("Password changed. Sign in with your new teacher password."); }} />}
       {session && api && (
         <S.Row aria-label="Teacher tools">
           {[
@@ -305,11 +309,11 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
             Only the authorised teacher can open the management tools.{" "}
             {localEditing
               ? "Sign in with your local teacher password."
-              : "Sign in with your authorised GitHub account. Other accounts cannot manage this blog."}
+              : onlinePassword ? "Sign in with your teacher email and password." : "Sign in with your authorised GitHub account. Other accounts cannot manage this blog."}
           </p>
-          {localEditing ? (
+          {localEditing || onlinePassword ? (
             <>
-              {localConfigured === false && (
+              {localEditing && localConfigured === false && (
                 <S.Notice>
                   Teacher access is locked until you configure a password. Run{" "}
                   <code>npm run admin:setup</code> in the project terminal on
@@ -323,6 +327,10 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                   connect();
                 }}
               >
+                {onlinePassword && <>
+                  <label htmlFor="teacher-email">Teacher email</label>
+                  <input id="teacher-email" type="email" autoComplete="username" maxLength={254} required value={teacherEmail} onChange={e => setTeacherEmail(e.target.value)} />
+                </>}
                 <label htmlFor="teacher-password">Teacher password</label>
                 <input
                   id="teacher-password"
@@ -336,12 +344,12 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                   aria-describedby="password-help"
                 />
                 <p id="password-help">
-                  Your password is checked by the local server. This session
+                  Your password is checked securely. This session
                   ends when you sign out, reload the page or after one hour.
                 </p>
                 <S.Button
                   type="submit"
-                  disabled={busy || localConfigured !== true}
+                  disabled={busy || (localEditing && localConfigured !== true)}
                 >
                   {busy ? "Signing in…" : "Sign in as teacher"}
                 </S.Button>

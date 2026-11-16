@@ -1,6 +1,6 @@
 import { api, base, localEditing, repoUrl } from "../lib";
 import * as S from "../styles";
-export default function TeacherAccess() {
+export default function TeacherAccess({ onlinePassword = false }: { onlinePassword?: boolean }) {
   const address = `${window.location.origin}${base}#/admin`;
   return (
     <S.Panel aria-labelledby="teacher-access-heading">
@@ -24,7 +24,7 @@ export default function TeacherAccess() {
         {localEditing
           ? "This address works only on this computer and requires the teacher password. It is not an online address for another computer."
           : api
-            ? "Sign in with the authorised GitHub account to save changes."
+            ? onlinePassword ? "Sign in with your teacher email and password to save changes." : "Sign in with the authorised GitHub account to save changes."
             : "Online sign-in is not configured yet. The site owner needs to configure the GitHub App and authentication service."}
       </p>
       {repoUrl ? (

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker, { verifyFile, type Env } from "../worker/index";
 import { readFileSync } from "node:fs";
+import { createHash, generateKeyPairSync, randomBytes, verify } from "node:crypto";
 import { newLevelsKey, readPrivateLevels } from "../shared/privateLevels.mjs";
 const origin = "https://teacher.github.io";
 const env: Env = {
@@ -74,6 +75,37 @@ async function getSession() {
   return JSON.parse(match![1]);
 }
 describe("Autenticação e persistência GitHub", () => {
+  it("signs in with email, uses a repository-scoped installation token and invalidates the session after rotation", async () => {
+    const password = randomBytes(24).toString("base64url");
+    const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const configured = { ...env, TEACHER_EMAIL: "teacher@example.test",
+      TEACHER_PASSWORD_HASH: createHash("sha256").update(password).digest("hex"),
+      TEACHER_LOGIN_LIMIT: { limit: vi.fn().mockResolvedValue({ success: true }) },
+      GITHUB_APP_ID: "123", GITHUB_INSTALLATION_ID: "456",
+      GITHUB_PRIVATE_KEY: privateKey.export({ type: "pkcs1", format: "pem" }).toString(),
+    };
+    const loginWith = (email: string) => worker.fetch(new Request("https://admin.test/login", {
+      method: "POST", headers: { Origin: origin }, body: JSON.stringify({ email, password }),
+    }), configured);
+    expect((await loginWith("other@example.test")).status).toBe(401);
+    configured.TEACHER_LOGIN_LIMIT.limit.mockResolvedValueOnce({ success: false });
+    expect((await loginWith(configured.TEACHER_EMAIL)).status).toBe(429);
+    const signedIn = await loginWith("Teacher@example.test");
+    expect(signedIn.status).toBe(200);
+    const { session } = await signedIn.json() as { session: string };
+    const spy = mockGithub();
+    const otherFetch = spy.getMockImplementation()!;
+    spy.mockImplementation(async (input, init) => {
+      if (!String(input).includes("/access_tokens")) return otherFetch(input, init);
+      expect(JSON.parse(String(init?.body))).toEqual({ repositories: ["blog"], permissions: { contents: "write" } });
+      const [header, payload, signature] = new Headers(init?.headers).get("Authorization")!.slice(7).split(".");
+      expect(verify("sha256", Buffer.from(header + "." + payload), publicKey, Buffer.from(signature, "base64url"))).toBe(true);
+      return Response.json({ token: "installation-fixture" });
+    });
+    const content = () => new Request("https://admin.test/content", { headers: { Origin: origin, Authorization: `Bearer ${session}` } });
+    expect((await worker.fetch(content(), configured)).status).toBe(200);
+    expect((await worker.fetch(content(), { ...configured, TEACHER_PASSWORD_HASH: "0".repeat(64) })).status).toBe(401);
+  });
   it("recusa credencial adulterada e sessão expirada", async () => {
     mockGithub();
     const session = await getSession();
