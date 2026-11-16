@@ -36,6 +36,20 @@ describe("Learning progress and teacher journal", () => {
     expect(screen.getByText("<script>unsafe()</script>")).toBeTruthy();
     expect(container.querySelector("script")).toBeNull();
   });
+  it("embeds teacher YouTube links on demand without embedding lookalike domains", async () => {
+    const data = structuredClone(fixture) as Manifest;
+    data.students[0].progress = { percent: 20, goal: "Listening", note: "Try this: (https://youtu.be/M7lc1UVf-VE)." };
+    data.posts = [{
+      id: "video-post", title: "Listening practice", date: "2026-10-21",
+      body: "https://www.youtube.com/shorts/M7lc1UVf-VE\nhttps://youtube.com.example.org/watch?v=M7lc1UVf-VE",
+    }];
+    const { container } = render(<LearningUpdates data={data} />);
+    const buttons = screen.getAllByRole("button", { name: "Load YouTube video 1" });
+    expect(buttons).toHaveLength(2);
+    expect(container.querySelector("iframe")).toBeNull();
+    await userEvent.setup().click(buttons[0]);
+    expect(container.querySelector("iframe")?.getAttribute("src")).toBe("https://www.youtube-nocookie.com/embed/M7lc1UVf-VE");
+  });
   it("edits progress and a public journal draft through the labelled forms", async () => {
     const user = userEvent.setup();
     function Harness() {

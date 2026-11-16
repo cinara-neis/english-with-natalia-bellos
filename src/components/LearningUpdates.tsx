@@ -1,6 +1,7 @@
 import type { Manifest, Student } from "../../shared/content";
 import * as S from "../styles";
 import { pageContent } from "../../shared/pageContent";
+import YouTubeText from "./YouTubeText";
 export default function LearningUpdates({
   data,
   student,
@@ -50,9 +51,7 @@ export default function LearningUpdates({
                   >
                     {s.progress.percent}%
                   </progress>
-                  <p>
-                    {s.progress.note || "Keep going. Every small step counts."}
-                  </p>
+                  <YouTubeText text={s.progress.note || "Keep going. Every small step counts."} />
                 </>
               ) : (
                 <>
@@ -106,7 +105,7 @@ export default function LearningUpdates({
                 <div
                   style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
                 >
-                  {p.body}
+                  <YouTubeText text={p.body} />
                 </div>
               </S.Panel>
             ))
