@@ -8,6 +8,24 @@ import MaterialEditor from "../src/components/MaterialEditor";
 import type { Manifest, Material } from "../shared/content";
 import manifest from "../public/content/manifest.json";
 afterEach(cleanup);
+it("previews the selected teacher sticker and opens its note by keyboard", async () => {
+  const user = userEvent.setup();
+  let latest: Manifest = structuredClone(manifest);
+  function Editor() {
+    const [draft, setDraft] = useState(latest);
+    return <PageContentEditor draft={draft} onChange={next => { latest = next; setDraft(next); }} />;
+  }
+  render(<Editor />);
+  await user.click(screen.getByText("Teacher profile image"));
+  await user.click(screen.getByRole("button", { name: "BTS-inspired purple heart", pressed: false }));
+  expect(latest.teacherStickers).toEqual(["purple"]);
+  const preview = screen.getByRole("button", { name: "BTS-inspired purple heart", expanded: false });
+  preview.focus();
+  await user.keyboard("{Enter}");
+  expect(screen.getByRole("status").textContent).toBe("A purple heart for BTS fans.");
+  await user.keyboard("{Escape}");
+  expect(preview.getAttribute("aria-expanded")).toBe("false");
+});
 it("edits homepage text as a draft with a preview, without changing contacts or other content", async () => {
   const user = userEvent.setup();
   let latest: Manifest = structuredClone(manifest);

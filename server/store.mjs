@@ -137,6 +137,18 @@ export function githubStore(env) {
     };
   }
   return {
+    studentAccounts: env.STUDENT_FILES_REPO && {
+      async read() { return (await privateAccounts()).accounts; },
+      async update(change) {
+        const { repo, sha, accounts } = await privateAccounts();
+        const next = change(accounts);
+        if (next === accounts) return;
+        await api("PUT", repo + "/contents/student-accounts.json", {
+          message: "Update private student accounts", ...(sha ? { sha } : {}),
+          content: Buffer.from(JSON.stringify(next)).toString("base64"),
+        });
+      },
+    },
     studentFiles: env.STUDENT_FILES_REPO && {
       async read() { return (await privateIndex()).items; },
       async update(change, upload) {
@@ -188,5 +200,10 @@ export function githubStore(env) {
     const repo = await privateRepository();
     const file = await api("GET", repo + "/contents/student-files.json", undefined, false, true);
     return { repo, sha: file?.sha, items: file ? JSON.parse(Buffer.from(file.content, "base64").toString("utf8")) : [] };
+  }
+  async function privateAccounts() {
+    const repo = await privateRepository();
+    const file = await api("GET", repo + "/contents/student-accounts.json", undefined, false, true);
+    return { repo, sha: file?.sha, accounts: file ? JSON.parse(Buffer.from(file.content, "base64").toString("utf8")) : {} };
   }
 }

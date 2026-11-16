@@ -12,6 +12,7 @@ import path from "node:path";
 import palette from "../shared/appearance.json" with { type: "json" };
 import { readPrivateLevels } from "../shared/privateLevels.mjs";
 import { studentFileAction } from "./studentFiles.mjs";
+import { createStudentInvite, normalizeEmail, registerStudent } from "./studentAccounts.mjs";
 const scrypt = promisify(scryptCallback),
   hash = (s) => createHash("sha256").update(s).digest("hex");
 export function accountLoader(root, env = {}) {
@@ -29,7 +30,7 @@ export function accountLoader(root, env = {}) {
     }
   };
 }
-export function createCommunity({ store, accounts, allowedOrigin, levelsKey = async () => undefined, studentFiles, teacherAccess }) {
+export function createCommunity({ store, accounts, allowedOrigin, levelsKey = async () => undefined, studentFiles, teacherAccess, studentAccounts }) {
   const sessions = new Map(),
     attempts = new Map(),
     tickets = new Map(),
@@ -112,18 +113,21 @@ export function createCommunity({ store, accounts, allowedOrigin, levelsKey = as
         return reply(403, { error: "Use the student community interface." });
       if (req.method === "POST" && route === "/status")
         return reply(200, { available: true });
-      if (req.method === "POST" && route === "/login") {
+      if (req.method === "POST" && route === "/accounts/invite") {
+        if (!(await teacherAccess?.(req))) return reply(401, { error: "Teacher sign-in is required." });
+        const result = await createStudentInvite(studentAccounts, store, (await json(req)).studentId);
+        return reply(result.status, result.data);
+      }
+      if (req.method === "POST" && (route === "/login" || route === "/register")) {
         const body = await json(req);
-        if (
-          typeof body.studentId !== "string" ||
-          !/^[a-zA-Z0-9_-]{1,80}$/.test(body.studentId)
-        )
+        const email = normalizeEmail(body.email);
+        if (!email)
           return reply(401, {
             error:
               "Student access is not configured or the password is incorrect.",
           });
         const key =
-          (req.socket.remoteAddress || "local") + "|" + body.studentId;
+          (req.socket.remoteAddress || "local") + "|" + (route === "/register" ? "register" : email);
         if (attempts.size >= 2000 && !attempts.has(key))
           return reply(429, { error: "Sign-in is busy. Try again later." });
         const cutoff = Date.now() - 900000;
@@ -134,7 +138,11 @@ export function createCommunity({ store, accounts, allowedOrigin, levelsKey = as
             error: "Too many sign-in attempts. Try again in 15 minutes.",
           });
         recent.push(Date.now());
-        const account = (await accounts())[body.studentId];
+        if (route === "/register") {
+          const result = await registerStudent(studentAccounts, store, body);
+          return reply(result.status, result.data);
+        }
+        const [studentId, account] = Object.entries(await accounts()).find(([, record]) => record.email === email) || [];
         if (
           !account ||
           typeof body.password !== "string" ||
@@ -157,7 +165,7 @@ export function createCommunity({ store, accounts, allowedOrigin, levelsKey = as
             error:
               "Student access is not configured or the password is incorrect.",
           });
-        if (!(await store.read()).students.some((s) => s.id === body.studentId))
+        if (!(await store.read()).students.some((s) => s.id === studentId))
           return reply(401, { error: "Student access is not configured." });
         attempts.delete(key);
         for (const [id, s] of sessions)
@@ -168,11 +176,11 @@ export function createCommunity({ store, accounts, allowedOrigin, levelsKey = as
           });
         const token = randomBytes(32).toString("base64url");
         sessions.set(hash(token), {
-          id: body.studentId,
+          id: studentId,
           credential: account.hash,
           expires: Date.now() + 3600000,
         });
-        return reply(200, { session: token, studentId: body.studentId });
+        return reply(200, { session: token, studentId });
       }
       if (req.method === "POST" && route === "/logout") {
         sessions.delete(

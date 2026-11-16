@@ -84,6 +84,7 @@ describe("Real local project storage", () => {
     };
     try {
       expect((await request("/content")).status).toBe(401);
+      expect((await request("/student-invite", { studentId: fixture.students[0].id })).status).toBe(401);
       expect(
         (await request("/publish", { manifest: fixture, uploads: [] })).status,
       ).toBe(401);
@@ -93,6 +94,9 @@ describe("Real local project storage", () => {
       const result = await request("/login", { password });
       expect(result.status).toBe(200);
       session = result.data.session;
+      const invite = await request("/student-invite", { studentId: fixture.students[0].id });
+      expect(invite.status).toBe(200);
+      expect(invite.data.code).toMatch(/^[\w-]{32}$/);
       await run(request, root);
       expect((await request("/logout", {})).status).toBe(200);
       expect((await request("/content")).status).toBe(401);

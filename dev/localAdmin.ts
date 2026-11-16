@@ -8,6 +8,8 @@ import { localAuth } from "./localAuth";
 import { acquireFileLock } from "../server/store.mjs";
 import { setPassword } from "../server/passwords.mjs";
 import { localStudentFiles, studentFileAction } from "../server/studentFiles.mjs";
+import { createStudentInvite, localStudentAccounts } from "../server/studentAccounts.mjs";
+import { fileStore } from "../server/store.mjs";
 import { localLevelsKey } from "../server/levelsKey.mjs";
 import { protectLevels, revealLevels } from "../shared/privateLevels.mjs";
 
@@ -48,7 +50,7 @@ export function localAdmin(): Plugin {
       const manifestPath = path.join(publicDir, "content/manifest.json");
       server.middlewares.use("/__local-admin", async (req, res, next) => {
         if (
-          !["/content", "/publish", "/status", "/login", "/logout", "/student-password", "/teacher-password", "/student-files/list", "/student-files/download"].includes(
+          !["/content", "/publish", "/status", "/login", "/logout", "/teacher-password", "/student-invite", "/student-files/list", "/student-files/download"].includes(
             req.url?.split("?")[0] || "",
           )
         )
@@ -127,18 +129,22 @@ export function localAdmin(): Plugin {
             const result = await studentFileAction(localStudentFiles(server.config.root), req.url!.split("/").pop()!, JSON.parse(Buffer.concat(chunks).toString("utf8")), undefined, true);
             return reply(result.status, result.data);
           }
-          if (req.method === "POST" && ["/student-password", "/teacher-password"].includes(req.url || "")) {
+          if (req.method === "POST" && ["/student-invite", "/teacher-password"].includes(req.url || "")) {
             if (req.headers.origin !== `http://${host}` || !req.headers["content-type"]?.startsWith("application/json")) return reply(403, { error: "Origin not authorised." });
             const chunks: Buffer[] = [];
             let size = 0;
             for await (const chunk of req) { size += chunk.length; if (size > 4096) return reply(413, { error: "Request too large." }); chunks.push(Buffer.from(chunk)); }
             const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+            if (req.url === "/student-invite") {
+              const result = await createStudentInvite(localStudentAccounts(server.config.root), fileStore(server.config.root), body.studentId);
+              return reply(result.status, result.data);
+            }
             if (req.url === "/teacher-password") {
               const verified = await auth.login(body.currentPassword);
               if (verified.status !== 200) return reply(verified.status, { error: verified.error });
               auth.logout("Bearer " + verified.session);
             }
-            await setPassword(server.config.root, req.url === "/teacher-password" ? null : body.studentId, body.password);
+            await setPassword(server.config.root, null, body.password);
             return reply(200, { ok: true });
           }
           if ((await fs.lstat(publicDir)).isSymbolicLink())

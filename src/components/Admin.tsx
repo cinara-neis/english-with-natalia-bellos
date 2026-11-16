@@ -20,6 +20,7 @@ import TeacherAccess from "./TeacherAccess";
 import TeacherPostEditor from "./TeacherPostEditor";
 import StudentProgressEditor from "./StudentProgressEditor";
 import PasswordManager from "./PasswordManager";
+import StudentInvite from "./StudentInvite";
 import PageContentEditor from "./PageContentEditor";
 import MaterialEditor from "./MaterialEditor";
 import StudentFiles from "./StudentFiles";
@@ -652,16 +653,7 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
               </form>
               {chosen && (
                 <>
-                  <PasswordManager key={chosen.id} session={session} studentId={chosen.id} onTeacherChanged={() => {}} />
-                  <S.Notice>
-                    <strong>Separate student sign-in</strong>
-                    <br />
-                    Student ID: <code>{chosen.id}</code>. Use the password form above locally. Alternatively, run{" "}
-                    <code>npm run student:setup -- {chosen.id}</code> in the
-                    project terminal. Use a different password from the teacher
-                    account. Hosted sync also needs the private student accounts
-                    configured on the community service.
-                  </S.Notice>
+                  <StudentInvite key={chosen.id} session={session} studentId={chosen.id} />
                   <S.Row style={{ marginTop: 18 }}>
                     <strong>{chosen.name}</strong>
                     <S.LinkButton

@@ -1,4 +1,5 @@
 import { defaultPageContent, type PageContent } from "./pageContent";
+import { maxTeacherStickers, teacherStickers, type TeacherSticker } from "./teacherStickers";
 export type Material = {
   id: string;
   title: string;
@@ -35,6 +36,7 @@ export type Manifest = {
   instagram?: string;
   pageContent?: Partial<PageContent>;
   teacherPhoto?: { src: string; alt: string };
+  teacherStickers?: TeacherSticker[];
   students: Student[];
   privateLevels?: string;
   posts?: TeacherPost[];
@@ -66,6 +68,12 @@ export function validateManifest(value: unknown): asserts value is Manifest {
   )
     throw new Error("Invalid manifest. Please check the blog details.");
   const ids = new Set<string>();
+  if (m.teacherStickers !== undefined && (
+    !Array.isArray(m.teacherStickers) ||
+    m.teacherStickers.length > maxTeacherStickers ||
+    new Set(m.teacherStickers).size !== m.teacherStickers.length ||
+    m.teacherStickers.some(sticker => typeof sticker !== "string" || !Object.hasOwn(teacherStickers, sticker))
+  )) throw new Error("Choose up to three different teacher stickers.");
   if (m.privateLevels !== undefined && (!str(m.privateLevels, 80000) || !/^[A-Za-z0-9+/]{16}\.[A-Za-z0-9+/]+={0,2}$/.test(m.privateLevels)))
     throw new Error("Invalid protected student levels.");
   if (m.pageContent !== undefined) {

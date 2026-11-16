@@ -1,5 +1,6 @@
 import type { Plugin } from "vite";
-import { createCommunity, accountLoader } from "../server/community.mjs";
+import { createCommunity } from "../server/community.mjs";
+import { localStudentAccounts } from "../server/studentAccounts.mjs";
 import { fileStore } from "../server/store.mjs";
 import { localLevelsKey } from "../server/levelsKey.mjs";
 import { localStudentFiles } from "../server/studentFiles.mjs";
@@ -8,9 +9,11 @@ export function community(): Plugin {
     name: "student-community",
     apply: "serve",
     configureServer(server) {
+      const studentAccounts = localStudentAccounts(server.config.root);
       const hub = createCommunity({
         store: fileStore(server.config.root),
-        accounts: accountLoader(server.config.root),
+        accounts: studentAccounts.read,
+        studentAccounts,
         studentFiles: localStudentFiles(server.config.root),
         levelsKey: () => localLevelsKey(server.config.root),
         allowedOrigin: (origin, req) => {

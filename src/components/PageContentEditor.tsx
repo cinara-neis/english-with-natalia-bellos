@@ -3,6 +3,8 @@ import type { Manifest } from "../../shared/content";
 import { pageContent, type PageContent } from "../../shared/pageContent";
 import { profilePhoto } from "../profilePhoto";
 import * as S from "../styles";
+import TeacherPortrait from "./TeacherPortrait";
+import { teacherStickers, maxTeacherStickers, type TeacherSticker } from "../../shared/teacherStickers";
 
 const sections: { title: string; fields: [keyof PageContent, string][] }[] = [
   { title: "Home", fields: [["homeEyebrow", "Welcome label"], ["homeBadge", "Welcome badge"], ["homeTitle", "Main headline"], ["homeIntro", "Welcome text"], ["collectionTitle", "Library title"], ["journalTitle", "Journal title"], ["progressIntro", "Progress introduction"], ["practiceNote", "Practice reminder"]] },
@@ -12,6 +14,7 @@ const sections: { title: string; fields: [keyof PageContent, string][] }[] = [
 ];
 export default function PageContentEditor({ draft, onChange }: { draft: Manifest; onChange: (value: Manifest) => void }) {
   const copy = pageContent(draft.pageContent);
+  const stickers = draft.teacherStickers || [];
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   return <S.Panel aria-labelledby="page-content-heading">
@@ -27,7 +30,20 @@ export default function PageContentEditor({ draft, onChange }: { draft: Manifest
     </details>)}
     <details>
       <summary style={{ cursor: "pointer", fontWeight: 600, paddingBlock: ".5rem" }}>Teacher profile image</summary>
-      {draft.teacherPhoto && <img src={draft.teacherPhoto.src} alt={draft.teacherPhoto.alt} width={96} height={96} />}
+      <div style={{ padding: "1rem" }}><TeacherPortrait photo={draft.teacherPhoto} stickers={stickers} /></div>
+      <fieldset style={{ marginBlock: "1rem" }}>
+        <legend>Profile stickers (up to three)</legend>
+        {Object.entries(teacherStickers).map(([key, sticker]) => {
+          const id = key as TeacherSticker;
+          const selected = stickers.includes(id);
+          return <S.Button key={key} type="button" $secondary aria-pressed={selected}
+            disabled={!selected && stickers.length >= maxTeacherStickers}
+            style={{ margin: ".25rem" }}
+            onClick={() => onChange({ ...draft, teacherStickers: selected ? stickers.filter(item => item !== id) : [...stickers, id] })}>
+            <span aria-hidden="true">{sticker.icon}</span> {sticker.label}
+          </S.Button>;
+        })}
+      </fieldset>
       <label htmlFor="teacher-image">Upload your teacher image</label>
       <input id="teacher-image" type="file" disabled={busy} accept="image/jpeg,image/png,image/webp" aria-describedby="teacher-image-help" onChange={async e => {
         const file = e.target.files?.[0]; e.target.value = ""; if (!file) return;

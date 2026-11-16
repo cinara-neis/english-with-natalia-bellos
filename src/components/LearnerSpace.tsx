@@ -5,24 +5,26 @@ import { communityBase, communityRequest } from "../community";
 import * as S from "../styles";
 import { profilePhoto } from "../profilePhoto";
 import StudentFiles from "./StudentFiles";
+import type { StudentSession } from "./StudentAccountForm";
 type Appearance = NonNullable<Student["appearance"]>;
 export default function LearnerSpace({
   student,
   onChange,
+  account,
+  onLogout,
   compact = false,
 }: {
   student: Student;
   onChange: (appearance: Appearance) => void;
+  account: StudentSession;
+  onLogout: () => void;
   compact?: boolean;
 }) {
   const [appearance, setAppearance] = useState<Appearance>(
-    student.appearance || { font: "classic", background: "sage" },
+    account.profile.appearance,
   );
-  const [session, setSession] = useState(""),
-    [level, setLevel] = useState<string | null>(null),
-    [levelAvailable, setLevelAvailable] = useState(true),
-    [password, setPassword] = useState(""),
-    [busy, setBusy] = useState(false),
+  const { session, profile: { level, levelAvailable } } = account;
+  const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
   function choose(next: Appearance) {
@@ -42,10 +44,9 @@ export default function LearnerSpace({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       if (e && typeof e === "object" && "status" in e && e.status === 401)
-        setSession("");
+        onLogout();
     } finally {
       setBusy(false);
-      setPassword("");
     }
   }
   return (
@@ -60,63 +61,6 @@ export default function LearnerSpace({
       </p>
       <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
         <S.ScreenReaderOnly as="legend">Student appearance</S.ScreenReaderOnly>
-        {!session && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void task(async () => {
-                const logged = await communityRequest("/login", {
-                  studentId: student.id,
-                  password,
-                });
-                const current = await communityRequest(
-                  "/appearance/read",
-                  {},
-                  logged.session,
-                );
-                setSession(logged.session);
-                setLevel(typeof current.level === "string" ? current.level : null);
-                setLevelAvailable(current.levelAvailable !== false);
-                setAppearance(current.appearance);
-                onChange(current.appearance);
-                setMessage(
-                  "Signed in as " +
-                    student.name +
-                    ". Your saved appearance is loaded. Choose a look and save it.",
-                );
-              });
-            }}
-          >
-            <label htmlFor="student-password">
-              Student password for {student.name}
-            </label>
-            <input
-              id="student-password"
-              type="password"
-              autoComplete="current-password"
-              minLength={12}
-              maxLength={256}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              aria-describedby="student-access-help"
-            />
-            <p id="student-access-help">
-              <small>
-                Ask the teacher for your own student password. This account can
-                change only your appearance, never teacher tools. This is not
-                the teacher password.
-              </small>
-            </p>
-            <S.Button type="submit" disabled={!communityBase}>
-              {busy ? "Signing in…" : "Student sign-in"}
-            </S.Button>
-            <details style={{ marginTop: "1rem" }}>
-              <summary style={{ cursor: "pointer" }}>Forgot your password?</summary>
-              <p>Ask your teacher to reset your student password. The teacher provides your first password too. There is no automatic email reset.</p>
-            </details>
-          </form>
-        )}
         {session ? <>
           <label htmlFor="student-photo">Your profile photo</label>
           <input id="student-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="student-photo-help"
@@ -186,7 +130,7 @@ export default function LearnerSpace({
               onClick={() =>
                 void task(async () => {
                   await communityRequest("/logout", {}, session);
-                  setSession("");
+                  onLogout();
                   setMessage("Student signed out.");
                 })
               }

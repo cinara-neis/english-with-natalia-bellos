@@ -9,6 +9,7 @@ export function createCommunity(options: {
   accounts: () => Promise<unknown>;
   levelsKey?: () => Promise<string | undefined>;
   studentFiles?: unknown;
+  studentAccounts?: unknown;
   teacherAccess?: (req: IncomingMessage) => Promise<boolean>;
   allowedOrigin: (origin: string | undefined, req: IncomingMessage) => boolean;
 }): {

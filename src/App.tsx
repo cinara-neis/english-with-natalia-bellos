@@ -20,9 +20,11 @@ import MaterialViewer from "./components/MaterialViewer";
 import AccessibilityControls from "./components/AccessibilityControls";
 import LearningUpdates from "./components/LearningUpdates";
 import LearnerSpace from "./components/LearnerSpace";
+import StudentAccountForm, { type StudentSession } from "./components/StudentAccountForm";
 import StudentFiles from "./components/StudentFiles";
 import LiveChat from "./components/LiveChat";
 import ContactForm from "./components/ContactForm";
+import TeacherPortrait from "./components/TeacherPortrait";
 import { pageContent } from "../shared/pageContent";
 type Page = "home" | "about" | "contact" | "admin" | "student-login";
 function route(): Page {
@@ -36,6 +38,7 @@ export default function App() {
   const [data, setData] = useState<Manifest>();
   const [error, setError] = useState("");
   const [selected, setSelected] = useState("");
+  const [studentAccount, setStudentAccount] = useState<StudentSession>();
   const [appearancePreview, setAppearancePreview] =
     useState<Student["appearance"]>();
   const [query, setQuery] = useState("");
@@ -98,6 +101,7 @@ export default function App() {
     };
   }, []);
   const student = data?.students.find((s) => s.id === selected);
+  const accountStudent = data?.students.find(s => s.id === studentAccount?.studentId);
   const copy = pageContent(data?.pageContent);
   const items = (
     student
@@ -131,10 +135,7 @@ export default function App() {
       <S.Shell>
         <S.Side>
           <S.Brand>
-            <img
-              src={data?.teacherPhoto?.src || `${base}teacher.svg`}
-              alt={data?.teacherPhoto?.alt || "Illustration of a smiling teacher holding a book"}
-            />
+            <TeacherPortrait photo={data?.teacherPhoto} stickers={data?.teacherStickers} />
             <p className="blog-name">
               {data?.blogName || "English with Natalia Bellos"}
             </p>
@@ -233,26 +234,14 @@ export default function App() {
             ) : page === "admin" ? (
               <Admin publicData={data} />
             ) : page === "student-login" ? (
-              <>
-                <S.Panel>
-                  <h1>Student login</h1>
-                  <p>Choose your name and sign in to see your private English level and manage your profile.</p>
-                  <label htmlFor="student-login-select">Your name</label>
-                  <select id="student-login-select" value={student?.id || ""} onChange={(event) => {
-                    setSelected(event.target.value);
-                    setAppearancePreview(undefined);
-                    setQuery("");
-                    setKind("all");
-                  }}>
-                    <option value="">Select your name</option>
-                    {data.students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </S.Panel>
-                {student && <>
-                  <LearnerSpace key={student.id} student={student} onChange={setAppearancePreview} />
-                  <S.Button $secondary as="a" href="#/">Open my learning page</S.Button>
-                </>}
-              </>
+              studentAccount && accountStudent ? <>
+                <h1>My student account</h1>
+                <LearnerSpace key={accountStudent.id} student={accountStudent} account={studentAccount} onLogout={() => setStudentAccount(undefined)} onChange={(appearance) => {
+                  setStudentAccount(current => current ? { ...current, profile: { ...current.profile, appearance } } : current);
+                  if (selected === accountStudent.id) setAppearancePreview(appearance);
+                }} />
+                <S.Button $secondary type="button" onClick={() => { chooseStudent(accountStudent.id); setAppearancePreview(studentAccount.profile.appearance); }}>Open my learning page</S.Button>
+              </> : <StudentAccountForm onLogin={setStudentAccount} />
             ) : page === "about" ? (
               <S.Panel>
                 <S.Eyebrow>NICE TO MEET YOU</S.Eyebrow>

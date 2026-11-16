@@ -8,7 +8,6 @@
   },
   "scripts": {
     "admin:setup": "node scripts/setup-local-admin.mjs",
-    "student:setup": "node scripts/setup-student.mjs",
     "community:start": "node server/start.mjs",
     "test:community": "node --test tests/community.node.mjs",
     "dev": "vite --host 127.0.0.1",

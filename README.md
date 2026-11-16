@@ -10,13 +10,9 @@ Na página de cada aluno há **Your space, your style**, com quatro fontes e cin
 
 O aluno não recebe acesso à professora: os serviços de autenticação são separados, e a API estudantil só pode gravar `students[ID_DA_SESSAO].appearance`, com valores pré-definidos. Ela não aceita código CSS, URLs, uploads, edição de documentos, alunos, posts ou progresso. Nenhuma senha padrão ou conta de aluno foi criada nesta entrega.
 
-**Preparar um aluno no computador:** no painel da professora, selecione o aluno e consulte o ID em **Separate student sign-in**. No terminal do projeto, execute, por exemplo:
+**Criar acesso de aluno:** no painel da professora, salve o perfil do aluno e clique em **Generate invitation code**. Entregue o código em particular. O aluno abre **Student login → Create an account or reset password** e informa e-mail, código e uma senha que ele mesmo escolhe (12 a 256 caracteres). Depois entra com e-mail e senha. Não há verificação ou envio automático por e-mail: o convite autoriza o vínculo ao perfil.
 
-```sh
-npm run student:setup -- ana
-```
-
-O comando pede uma senha de 12–256 caracteres, com digitação oculta, e guarda somente salt/hash scrypt em `.student-auth/accounts.json`. Use senhas diferentes da professora. O arquivo é privado, ignorado pelo Git, negado pelo servidor web e excluído do pacote de entrega. Entregue a senha ao aluno fora do chat público. Trocar a senha invalida as sessões desse aluno na próxima operação. Sessões ficam só em memória e expiram em uma hora.
+O código é de uso único e expira em 48 horas. Para recuperar o acesso, a professora gera outro código e o aluno usa o e-mail já cadastrado. Isso invalida as sessões e a senha antigas. Contas anteriores, sem e-mail, precisam fazer o cadastro uma vez com um convite. Sessões ficam só em memória e expiram em uma hora.
 
 Durante `npm run dev`, o serviço real de comunidade funciona no mesmo Vite: fontes e fundos são salvos no manifest do projeto e podem ser carregados por outra sessão autenticada. Isso permite testar dois navegadores/abas no mesmo computador. Para aparelhos distintos acessarem os mesmos dados pela internet, configure o serviço hospedado abaixo; `localhost` não é um endereço compartilhado entre aparelhos.
 
@@ -30,7 +26,7 @@ O GitHub Pages continua hospedando o blog. O serviço Node em `server/start.mjs`
 2. Defina `ALLOWED_ORIGINS` com a origem exata do blog, sem caminho, por exemplo `https://SEU_USUARIO.github.io`. Múltiplas origens explícitas podem ser separadas por vírgula. Não use `*`.
 3. Para sincronizar preferências, utilize a GitHub App restrita ao repositório do blog, com **Contents: read and write** e **Metadata: read**. Na configuração dessa App, gere uma chave privada PEM e guarde-a somente no serviço. A sincronização usa um token de instalação temporário, sem token pessoal de acesso.
 4. Configure no serviço, como variáveis/segredos: `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH=main`, `GITHUB_APP_ID` (App ID, não Client ID), `GITHUB_INSTALLATION_ID`, `GITHUB_PRIVATE_KEY` (PEM completo). O installation ID pode ser encontrado na página da instalação da App, no final do endereço `github.com/settings/installations/NUMERO`. A chave privada é obtida nas configurações da App, em Private keys. Nunca coloque esses segredos em variáveis `VITE_*` ou commits.
-5. Crie as senhas locais dos alunos e copie o conteúdo de `.student-auth/accounts.json` para o segredo `STUDENT_ACCOUNTS_JSON` do serviço hospedado. Atualize esse segredo ao cadastrar ou trocar senhas. Não publique o arquivo e não use a senha da professora para alunos. Esta versão tem provisionamento de contas pela responsável, sem cadastro público de usuários ou recuperação por e-mail.
+5. Configure o repositório privado em `STUDENT_FILES_REPO` e a origem do Worker em `TEACHER_ADMIN_API` no serviço Node. A GitHub App da comunidade precisa de acesso de leitura e escrita ao repositório privado. As contas são mantidas em `student-accounts.json` ali; localmente, em `.student-auth/accounts.json`. Nunca copie esses dados para o repositório público.
 6. No GitHub Actions, crie a variável pública `VITE_COMMUNITY_URL=https://SEU_SERVICO.onrender.com` e rode o deploy do Pages. No desenvolvimento, essa mesma variável em `.env.local` permite apontar para o serviço hospedado em vez do serviço local. O JSON só muda ao salvar explicitamente; cada alteração online gera um commit e pode acionar o deploy do Pages.
 
 O chat pode funcionar com apenas a origem permitida configurada. A sincronização precisa também das contas e da GitHub App. Sem `VITE_COMMUNITY_URL` na build pública, a interface informa que o serviço ainda não foi configurado e não mostra contagens fictícias. A configuração de exemplo está em `server/.env.example`; ela é documentação, não é carregada automaticamente como segredo pelo servidor.
@@ -320,12 +316,9 @@ Os ícones no menu abrem o perfil Instagram e o formulário Contact. Os valores 
 O contador vermelho sobre o botão mostra mensagens recebidas enquanto o chat está minimizado, apenas após entrar na sala. Abrir a conversa zera o contador. Não são notificações push: sem conexão ou com a página fechada, não há recebimento nem histórico offline.
 
 
-## Primeiras senhas e recuperação
+## Recuperação da senha da professora
 
-No admin local, a professora seleciona um aluno já salvo e usa Create or reset student password. Ela define e confirma uma senha com no mínimo 12 caracteres e a entrega ao aluno por um meio privado. A senha nunca é exibida ou gravada no manifest público; somente salt e hash ficam em .student-auth/accounts.json, fora do ZIP e do Git. Redefinir invalida sessões anteriores. O link Forgot your password? do aluno orienta procurar a professora; não simula email de recuperação.
-
-A professora autenticada pode usar Change teacher password, informando a senha atual; a troca encerra todas as sessões. Se esquecer a senha local, o dono do projeto executa npm run admin:setup no computador. Na versão publicada, a recuperação da professora é pelo GitHub. As mudanças de senha dos alunos no painel são implementadas para o editor local; no serviço online atual, STUDENT_ACCOUNTS_JSON é um segredo de configuração, e sua atualização ainda precisa ser feita pelo responsável pelo serviço. O painel publicado informa essa restrição e não apresenta uma falsa gravação.
-
+A professora autenticada pode usar **Change teacher password** no modo local. Se esquecer a senha local, o dono do projeto executa `npm run admin:setup`. No site publicado, a recuperação da professora é pelo GitHub. A recuperação do estudante usa o convite individual descrito acima.
 
 ## Repositório deste blog
 

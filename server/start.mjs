@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { createCommunity, accountLoader } from "./community.mjs";
+import { createCommunity } from "./community.mjs";
 import { githubStore } from "./store.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const origins = new Set(
@@ -34,7 +34,8 @@ const hub = createCommunity({
     }
     return (await response.json()).teacherSession === true;
   },
-  accounts: accountLoader(root, process.env),
+  accounts: store.studentAccounts?.read || (async () => ({})),
+  studentAccounts: store.studentAccounts,
   levelsKey: async () => process.env.STUDENT_LEVELS_KEY,
   allowedOrigin: (origin) => origins.has(origin),
 });

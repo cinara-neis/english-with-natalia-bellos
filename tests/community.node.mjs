@@ -3,10 +3,10 @@ import path from "node:path";
 import { randomBytes, scryptSync } from "node:crypto";
 import { Readable } from "node:stream";
 import assert from "node:assert/strict";
-import { createCommunity, accountLoader } from "../server/community.mjs";
+import { createCommunity } from "../server/community.mjs";
 import { fileStore } from "../server/store.mjs";
 import test from "node:test";
-import { setPassword } from "../server/passwords.mjs";
+import { localStudentAccounts } from "../server/studentAccounts.mjs";
 import { newLevelsKey, protectLevels } from "../shared/privateLevels.mjs";
 import { localStudentFiles } from "../server/studentFiles.mjs";
 test("Student access, cross-session appearance persistence and chat join protection", async () => {
@@ -34,6 +34,7 @@ test("Student access, cross-session appearance persistence and chat join protect
         hash: scryptSync(password, salt, 64).toString("hex"),
       },
       [fixture.students[1].id]: {
+        email: "second@example.test",
         salt: salt.toString("hex"),
         hash: scryptSync(password, salt, 64).toString("hex"),
       },
@@ -41,7 +42,8 @@ test("Student access, cross-session appearance persistence and chat join protect
   );
   const hub = createCommunity({
     store: fileStore(root),
-    accounts: accountLoader(root),
+    accounts: localStudentAccounts(root).read,
+    studentAccounts: localStudentAccounts(root),
     studentFiles: localStudentFiles(root),
     teacherAccess: async req => req.headers.authorization === "Bearer fixture-teacher",
     levelsKey: async () => levelsSecret,
@@ -84,24 +86,32 @@ test("Student access, cross-session appearance persistence and chat join protect
     assert.equal(
       (
         await request("/login", {
-          studentId: fixture.students[0].id,
+          email: "first@example.test",
           password: "wrong-password",
         })
       ).status,
       401,
     );
+    const studentProfile = { studentId: fixture.students[0].id };
+    assert.equal((await request("/accounts/invite", studentProfile)).status, 401);
+    const invitation = await request("/accounts/invite", studentProfile, "fixture-teacher");
+    assert.equal(invitation.status, 200);
+    const registration = { email: "First@Example.test", password, code: invitation.value.code, studentId: fixture.students[1].id };
+    assert.equal((await request("/register", registration)).status, 201);
+    assert.equal((await request("/register", registration)).status, 400);
     const a = await request("/login", {
-      studentId: fixture.students[0].id,
+      email: "first@example.test",
       password,
     });
     assert.equal(a.status, 200);
+    assert.equal(a.value.studentId, fixture.students[0].id);
     const studentId = fixture.students[0].id;
     const content = Buffer.from("%PDF-1.4\nTest file").toString("base64");
     const upload = await request("/files/upload", { name: "lesson.pdf", content, public: true }, a.value.session);
     assert.equal(upload.status, 201);
     assert.equal(upload.value.file.public, false);
     const id = upload.value.file.id;
-    const other = await request("/login", { studentId: fixture.students[1].id, password });
+    const other = await request("/login", { email: "second@example.test", password });
     assert.equal(other.status, 200);
     assert.equal((await request("/files/download", { id, studentId }, other.value.session)).status, 404);
     assert.equal((await request("/files/visibility", { id, public: true, confirmed: true }, other.value.session)).status, 404);
@@ -120,7 +130,7 @@ test("Student access, cross-session appearance persistence and chat join protect
     assert.ok(!JSON.stringify(own.value).includes("Private second level"));
     assert.ok(publicFixture.students.every(student => !Object.hasOwn(student, "level")));
     const b = await request("/login", {
-      studentId: fixture.students[0].id,
+      email: "first@example.test",
       password,
     });
     assert.equal(b.status, 200);
@@ -189,7 +199,7 @@ test("Student access, cross-session appearance persistence and chat join protect
     assert.equal((await request("/appearance", { font: "modern", background: "sky", photo: "data:image/svg+xml,<svg/>" }, b.value.session)).status, 400);
     assert.equal((await request("/appearance", { font: "modern", background: "sky", photo: "data:image/jpeg;base64,/9j/" + "A".repeat(7000) }, b.value.session)).status, 400);
     assert.equal((await request("/appearance", { studentId: fixture.students[1].id, font: "modern", background: "sky", photo }, b.value.session)).status, 200);
-    const photoSession = await request("/login", { studentId: fixture.students[0].id, password });
+    const photoSession = await request("/login", { email: "first@example.test", password });
     assert.equal((await request("/appearance/read", {}, photoSession.value.session)).value.appearance.photo, photo);
     assert.deepEqual((await fileStore(root).read()).students[1], publicFixture.students[1]);
     assert.equal((await request("/appearance", { font: "classic", background: "sage" }, b.value.session)).status, 200);
@@ -200,13 +210,14 @@ test("Student access, cross-session appearance persistence and chat join protect
       b.value.session,
     );
     assert.equal(forged.status, 404);
-    await assert.rejects(setPassword(root, fixture.students[0].id, "short"));
-    await assert.rejects(setPassword(root, "missing-student", password));
     const newPassword = randomBytes(24).toString("base64url");
-    await setPassword(root, fixture.students[0].id, newPassword);
+    const recovery = await request("/accounts/invite", studentProfile, "fixture-teacher");
+    const reset = { code: recovery.value.code, password: newPassword };
+    assert.equal((await request("/register", { ...reset, email: "wrong@example.test" })).status, 400);
+    assert.equal((await request("/register", { ...reset, email: "first@example.test" })).status, 201);
     assert.equal((await request("/appearance/read", {}, b.value.session)).status, 401);
-    assert.equal((await request("/login", { studentId: fixture.students[0].id, password })).status, 401);
-    assert.equal((await request("/login", { studentId: fixture.students[0].id, password: newPassword })).status, 200);
+    assert.equal((await request("/login", { email: "first@example.test", password })).status, 401);
+    assert.equal((await request("/login", { email: "first@example.test", password: newPassword })).status, 200);
     const privateFile = await fs.readFile(path.join(root, ".student-auth/accounts.json"), "utf8");
     assert.ok(!privateFile.includes(newPassword));
     console.log(
