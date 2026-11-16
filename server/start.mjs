@@ -14,9 +14,28 @@ if (!origins.size) {
   console.error("Configure ALLOWED_ORIGINS with the exact public blog origin.");
   process.exit(1);
 }
+const store = githubStore(process.env);
 const hub = createCommunity({
-  store: githubStore(process.env),
+  store,
+  studentFiles: store.studentFiles,
+  teacherAccess: async (req) => {
+    const endpoint = process.env.TEACHER_ADMIN_API;
+    const authorization = req.headers.authorization;
+    if (!endpoint || !authorization?.startsWith("Bearer ")) return false;
+    const url = new URL("/teacher-session", endpoint);
+    if (url.protocol !== "https:") return false;
+    const response = await fetch(url, {
+      headers: { Authorization: authorization, Origin: req.headers.origin },
+      redirect: "error",
+    });
+    if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) {
+      await response.body?.cancel();
+      return false;
+    }
+    return (await response.json()).teacherSession === true;
+  },
   accounts: accountLoader(root, process.env),
+  levelsKey: async () => process.env.STUDENT_LEVELS_KEY,
   allowedOrigin: (origin) => origins.has(origin),
 });
 const server = createServer((req, res) => {

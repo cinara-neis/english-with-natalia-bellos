@@ -20,15 +20,16 @@ import MaterialViewer from "./components/MaterialViewer";
 import AccessibilityControls from "./components/AccessibilityControls";
 import LearningUpdates from "./components/LearningUpdates";
 import LearnerSpace from "./components/LearnerSpace";
+import StudentFiles from "./components/StudentFiles";
 import LiveChat from "./components/LiveChat";
 import ContactForm from "./components/ContactForm";
 import { pageContent } from "../shared/pageContent";
-type Page = "home" | "about" | "contact" | "admin";
+type Page = "home" | "about" | "contact" | "admin" | "student-login";
 function route(): Page {
   const p = location.hash
-    ? location.hash.slice(2)
-    : location.pathname.match(/\/(admin|about|contact)\/?$/)?.[1];
-  return p && ["about", "contact", "admin"].includes(p) ? (p as Page) : "home";
+    ? location.hash.slice(2).split("?")[0]
+    : location.pathname.match(/\/(admin|about|contact|student-login)\/?$/)?.[1];
+  return p && ["about", "contact", "admin", "student-login"].includes(p) ? (p as Page) : "home";
 }
 export default function App() {
   const [page, setPage] = useState<Page>(route);
@@ -59,7 +60,7 @@ export default function App() {
       mainRef.current?.focus();
       previousPage.current = page;
     }
-    document.title = `${page === "home" ? "Home" : page === "admin" ? "Teacher’s desk" : page === "about" ? "About" : "Contact"} | ${data?.blogName || "English with Natalia Bellos"}`;
+    document.title = `${page === "home" ? "Home" : page === "admin" ? "Teacher’s desk" : page === "student-login" ? "Student login" : page === "about" ? "About" : "Contact"} | ${data?.blogName || "English with Natalia Bellos"}`;
   }, [page, data?.blogName]);
   const close = useCallback(() => setView(undefined), []);
   const reload = () => {
@@ -174,14 +175,6 @@ export default function App() {
               </S.Students>
             </S.StudentNavigation>
           </nav>
-          {page === "home" && (
-            <details id="student-access" style={{ marginTop: "1rem" }}>
-              <summary style={{ cursor: "pointer", paddingBlock: ".75rem", fontWeight: 600 }}>Student login &amp; profile</summary>
-              {student ? (
-                <LearnerSpace key={student.id} student={student} onChange={setAppearancePreview} compact />
-              ) : <p>Select your name in Students and materials to sign in and personalise your page.</p>}
-            </details>
-          )}
           <S.TeacherNote>
             “{copy.sidebarQuote}”<small>{copy.sidebarCaption}</small>
           </S.TeacherNote>
@@ -207,6 +200,12 @@ export default function App() {
               <a href={data?.instagram || "https://www.instagram.com/"} target="_blank" rel="noopener noreferrer" aria-label="Teacher Instagram (opens in a new tab)" title="Instagram"><Instagram size={21} aria-hidden="true" /></a>
               <a href="#/contact" aria-label="Open Gmail contact form" title="Gmail contact form"><Mail size={21} aria-hidden="true" /></a>
               <a
+                href="#/student-login"
+                aria-current={page === "student-login" ? "page" : undefined}
+              >
+                <LockKeyhole size={16} aria-hidden="true" /> Student login
+              </a>
+              <a
                 href="#/admin"
                 aria-current={page === "admin" ? "page" : undefined}
               >
@@ -220,7 +219,7 @@ export default function App() {
             ref={mainRef}
             tabIndex={-1}
             $appearance={
-              page === "home" && student
+              (page === "home" || page === "student-login") && student
                 ? appearancePreview || student.appearance
                 : undefined
             }
@@ -233,6 +232,27 @@ export default function App() {
               <p role="status">Getting our English corner ready…</p>
             ) : page === "admin" ? (
               <Admin publicData={data} />
+            ) : page === "student-login" ? (
+              <>
+                <S.Panel>
+                  <h1>Student login</h1>
+                  <p>Choose your name and sign in to see your private English level and manage your profile.</p>
+                  <label htmlFor="student-login-select">Your name</label>
+                  <select id="student-login-select" value={student?.id || ""} onChange={(event) => {
+                    setSelected(event.target.value);
+                    setAppearancePreview(undefined);
+                    setQuery("");
+                    setKind("all");
+                  }}>
+                    <option value="">Select your name</option>
+                    {data.students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </S.Panel>
+                {student && <>
+                  <LearnerSpace key={student.id} student={student} onChange={setAppearancePreview} />
+                  <S.Button $secondary as="a" href="#/">Open my learning page</S.Button>
+                </>}
+              </>
             ) : page === "about" ? (
               <S.Panel>
                 <S.Eyebrow>NICE TO MEET YOU</S.Eyebrow>
@@ -287,6 +307,7 @@ export default function App() {
                   <Garden />
                 </S.Hero>
                 <LearningUpdates data={data} student={student} />
+                {student && <StudentFiles key={student.id} studentId={student.id} />}
                 <S.Row>
                   <div>
                     <S.Eyebrow style={{ marginBottom: 8 }}>
@@ -305,7 +326,6 @@ export default function App() {
                       </span>
                     </h2>
                   </div>
-                  {student && <S.Chip>{student.level}</S.Chip>}
                 </S.Row>
                 <S.Row>
                   <div

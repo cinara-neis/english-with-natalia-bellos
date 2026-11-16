@@ -5,12 +5,12 @@ workers_dev = true
 
 # Sem KV, D1, R2 ou qualquer banco de dados.
 [vars]
-FRONTEND_URL = "https://SEU_USUARIO.github.io/english-with-clara/"
-GITHUB_OWNER = "SEU_USUARIO"
-GITHUB_REPO = "english-with-clara"
+FRONTEND_URL = "https://cinara-neis.github.io/english-with-natalia-bellos/"
+GITHUB_OWNER = "cinara-neis"
+GITHUB_REPO = "english-with-natalia-bellos"
 GITHUB_BRANCH = "main"
-GITHUB_CLIENT_ID = "CLIENT_ID_DA_GITHUB_APP"
-ALLOWED_LOGIN = "SEU_USUARIO"
+GITHUB_CLIENT_ID = "Iv23lijSQxaOmRNNBn2L"
+ALLOWED_LOGIN = "cinara-neis"
 
 # Segredos via wrangler secret put --config worker/wrangler.toml:
 # GITHUB_CLIENT_SECRET

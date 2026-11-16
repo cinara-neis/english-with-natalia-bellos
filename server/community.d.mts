@@ -7,6 +7,9 @@ export function accountLoader(
 export function createCommunity(options: {
   store: unknown;
   accounts: () => Promise<unknown>;
+  levelsKey?: () => Promise<string | undefined>;
+  studentFiles?: unknown;
+  teacherAccess?: (req: IncomingMessage) => Promise<boolean>;
   allowedOrigin: (origin: string | undefined, req: IncomingMessage) => boolean;
 }): {
   handleHttp(req: IncomingMessage, res: ServerResponse): Promise<void>;

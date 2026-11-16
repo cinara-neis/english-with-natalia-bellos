@@ -198,7 +198,7 @@ Deixe `VITE_ADMIN_API` vazio. No próprio GitHub, usando o seu login:
 }
 ```
 
-3. Para texto, use `kind: "text"`, `text: "Seu texto..."` e omita `path`. Para Word: `docx`/`doc`; imagem: `image`. Alunos precisam de `id`, `name`, `level` e `materials`.
+3. Para texto, use `kind: "text"`, `text: "Seu texto..."` e omita `path`. Para Word: `docx`/`doc`; imagem: `image`. Alunos precisam de `id`, `name` e `materials`. Nunca coloque `level` no catálogo público.
 4. Ao excluir, remova a referência no JSON e o arquivo no GitHub. Publique somente quando os dois estiverem coerentes. O workflow valida o manifest e a existência dos arquivos; uma alteração incompleta não substitui o site publicado.
 5. Faça commit na main; aguarde o Pages. Nenhuma credencial é solicitada no frontend.
 
@@ -348,3 +348,28 @@ Novos controles:
 Esses controles usam o manifest validado e o mesmo endpoint autenticado de publicação existente, tanto localmente quanto no Worker configurado. Não há novo banco ou credenciais no frontend. A professora só terá autonomia no site publicado após o responsável técnico configurar a GitHub App/Worker e VITE_ADMIN_API; editar o projeto local não atualiza automaticamente o repositório remoto. A gestão de senhas dos alunos no modo hospedado continua sendo a limitação documentada anteriormente.
 
 Validação desta ampliação: 30 testes, checagem TypeScript do frontend e Worker e compilação de produção.
+
+
+## Nível de inglês privado
+
+O painel autenticado da professora permite definir o nível de cada aluno. No blog, o aluno só vê o seu próprio nível após entrar em **Student login**, no menu superior. Progresso, nomes e materiais continuam públicos; não inclua o nível em textos, comentários ou documentos públicos.
+
+Os níveis existentes são migrados com `npm run levels:migrate`. O catálogo versionado guarda somente um bloco cifrado com AES-GCM; a chave local fica em `.student-auth/levels.key`, fora do Git, do ZIP e do site. Guarde uma cópia privada dessa chave. Sem ela, não há como recuperar os níveis cifrados. Não substitua a chave ao atualizar o serviço.
+
+Para publicar a mudança, inclua o novo código e o catálogo migrado no GitHub. No Git Bash, a partir da pasta do projeto, configure a mesma chave no Worker sem exibi-la no terminal:
+
+```bash
+npx wrangler secret put STUDENT_LEVELS_KEY --config worker/wrangler.toml < .student-auth/levels.key
+npm run worker:deploy
+```
+
+No serviço Node de comunidade, configure o mesmo valor como segredo `STUDENT_LEVELS_KEY` e publique o código atualizado do serviço. Nunca coloque a chave em `VITE_*`. O acesso dos alunos online continua dependendo das contas e do serviço de comunidade. O painel da professora ainda depende do login autorizado e de `VITE_ADMIN_API`.
+
+O build recusa catálogos com níveis em texto aberto. A publicação atualizada não apaga os níveis que já estavam em commits públicos antigos ou em cópias baixadas. Se havia níveis reais nessas versões, trate a remoção do histórico separadamente.
+
+
+## Arquivos dos alunos: publicar e retirar
+
+Em **Student login → My files**, o aluno envia PDF, Word ou imagem (até 2 MiB por arquivo, até 20 arquivos). O envio começa privado. **Publish** exige confirmação e inclui o download na página do aluno. **Remove from public page** retira o download público sem apagar o arquivo. A professora pode consultar os arquivos do aluno selecionado em **Files shared with you**. Cada download é autorizado no servidor; o site não entrega URLs do armazenamento privado. Cópias já baixadas não podem ser recolhidas. Os materiais antigos publicados pelo painel da professora continuam separados.
+
+Localmente, os arquivos ficam em `.student-auth/student-files/`, fora do site e do Git. Para o modo hospedado, crie um repositório **privado**, inicializado com README, na mesma conta do blog. Autorize a GitHub App do serviço Node a ler e escrever nesse repositório, mantendo-o privado. Configure `STUDENT_FILES_REPO` com o nome do repositório privado e `TEACHER_ADMIN_API` com a origem HTTPS do Worker de administração no serviço Node. Publique as versões atualizadas do serviço Node, do Worker e do site. O Worker valida a sessão da professora, e o serviço Node consulta o repositório privado. Sem a configuração, o upload não é ativado no site publicado. Não inclua os arquivos privados na publicação do Pages.

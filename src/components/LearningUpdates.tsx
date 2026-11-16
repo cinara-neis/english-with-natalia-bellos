@@ -31,7 +31,6 @@ export default function LearningUpdates({
             <S.Card key={s.id}>
               <S.Row style={{ margin: 0 }}>
                 <h3>{s.name}</h3>
-                <S.Chip>{s.level}</S.Chip>
               </S.Row>
               {s.progress ? (
                 <>

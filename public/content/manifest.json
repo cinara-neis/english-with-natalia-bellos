@@ -8,7 +8,6 @@
     {
       "id": "ana",
       "name": "Ana Beatriz",
-      "level": "A1 · Beginner",
       "materials": [
         {
           "id": "ana-hello",
@@ -29,7 +28,6 @@
     {
       "id": "matheus",
       "name": "Matheus Lima",
-      "level": "A2 · Elementary",
       "materials": [
         {
           "id": "matheus-routine",
@@ -51,7 +49,6 @@
     {
       "id": "pedro",
       "name": "Pedro Santos",
-      "level": "B1 · Intermediate",
       "materials": [
         {
           "id": "pedro-weekend",
@@ -63,5 +60,6 @@
       ]
     }
   ],
-  "instagram": "https://www.instagram.com/example/"
+  "instagram": "https://www.instagram.com/example/",
+  "privateLevels": "SQsjZMrMAJoXBYGz.z0P06q4rsuiZu0ZwsivwFCTgY21WUyH2gZIa3yZYtBgWpxoUNLLmMvbJ+HK9/XDKO4VsvFwKqk/nbyn482r3EAJXHLsgroqGsan7Ea+I5Ps94bGV83oWdSVxdZNC0zU4abg="
 }

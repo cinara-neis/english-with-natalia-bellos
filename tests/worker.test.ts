@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker, { verifyFile, type Env } from "../worker/index";
 import { readFileSync } from "node:fs";
+import { newLevelsKey, readPrivateLevels } from "../shared/privateLevels.mjs";
 const origin = "https://teacher.github.io";
 const env: Env = {
   FRONTEND_URL: origin + "/blog/",
@@ -10,11 +11,13 @@ const env: Env = {
   GITHUB_CLIENT_ID: "client",
   GITHUB_CLIENT_SECRET: "test-secret",
   SESSION_SECRET: btoa("12345678901234567890123456789012"),
+  STUDENT_LEVELS_KEY: newLevelsKey(),
   ALLOWED_LOGIN: "teacher",
 };
 const manifest = JSON.parse(
   readFileSync("public/content/manifest.json", "utf8"),
 );
+delete manifest.privateLevels;
 afterEach(() => vi.restoreAllMocks());
 function mockGithub(login = "teacher", head = "abc") {
   return vi
@@ -97,6 +100,7 @@ describe("Autenticação e persistência GitHub", () => {
     const spy = mockGithub();
     const session = await getSession();
     const changed = structuredClone(manifest);
+    changed.students[0].level = "Private level for teacher and learner";
     changed.students[0].materials.push({
       id: "new-pdf",
       title: "New lesson",
@@ -132,6 +136,11 @@ describe("Autenticação e persistência GitHub", () => {
       String(url).endsWith("/git/trees"),
     );
     const body = JSON.parse(String(call?.[1]?.body));
+    const catalog = JSON.parse(body.tree.find((entry: { path: string }) => entry.path === "public/content/manifest.json").content);
+    expect(catalog.students.every((student: object) => !Object.hasOwn(student, "level"))).toBe(true);
+    expect(await readPrivateLevels(catalog.privateLevels, env.STUDENT_LEVELS_KEY)).toEqual({
+      [changed.students[0].id]: "Private level for teacher and learner",
+    });
     expect(body.tree).toContainEqual({
       path: "public/content/uploads/new.pdf",
       mode: "100644",

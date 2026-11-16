@@ -22,6 +22,7 @@ import StudentProgressEditor from "./StudentProgressEditor";
 import PasswordManager from "./PasswordManager";
 import PageContentEditor from "./PageContentEditor";
 import MaterialEditor from "./MaterialEditor";
+import StudentFiles from "./StudentFiles";
 type UploadData = { path: string; content: string };
 export default function Admin({ publicData }: { publicData: Manifest }) {
   const [session, setSession] = useState("");
@@ -36,7 +37,7 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
   const [dirty, setDirty] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [name, setName] = useState("");
-  const [level, setLevel] = useState("A1 · Beginner");
+  const [level, setLevel] = useState("");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"text" | "file">("file");
@@ -238,6 +239,7 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
             ["journal-editor-heading", "Homepage posts"],
             ["page-content-heading", "Page texts and image"],
             ["blog-details-heading", "Contacts and About"],
+            ["about", "Edit About"],
           ].map(([id, label]) => (
             <S.Button
               key={id}
@@ -555,6 +557,7 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                 ))}
               </S.Panel>
             )}
+            {chosen && <StudentFiles key={chosen.id} studentId={chosen.id} session={session} teacher />}
             {chosen && (
               <StudentProgressEditor
                 student={chosen}
@@ -623,12 +626,13 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                     />
                   </div>
                   <div>
-                    <label htmlFor="level">Level</label>
+                    <label htmlFor="level">English level (private)</label>
                     <select
                       id="level"
                       value={level}
                       onChange={(e) => setLevel(e.target.value)}
                     >
+                      <option value="">Not set</option>
                       {[
                         "A1 · Beginner",
                         "A2 · Elementary",
@@ -696,11 +700,12 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                       })
                     }
                   />
-                  <label htmlFor="editLevel">Edit level</label>
+                  <label htmlFor="editLevel">English level (private)</label>
+                  <p><small>Only you and this student can see the level after signing in.</small></p>
                   <input
                     id="editLevel"
                     maxLength={50}
-                    value={chosen.level}
+                    value={chosen.level || ""}
                     onChange={(e) =>
                       change({
                         ...draft,

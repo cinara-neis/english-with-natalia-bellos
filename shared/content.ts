@@ -11,7 +11,7 @@ export type Material = {
 export type Student = {
   id: string;
   name: string;
-  level: string;
+  level?: string;
   materials: Material[];
   progress?: { percent: number; goal: string; note: string };
   appearance?: {
@@ -36,6 +36,7 @@ export type Manifest = {
   pageContent?: Partial<PageContent>;
   teacherPhoto?: { src: string; alt: string };
   students: Student[];
+  privateLevels?: string;
   posts?: TeacherPost[];
 };
 export const MAX_FILE = 2 * 1024 * 1024;
@@ -65,6 +66,8 @@ export function validateManifest(value: unknown): asserts value is Manifest {
   )
     throw new Error("Invalid manifest. Please check the blog details.");
   const ids = new Set<string>();
+  if (m.privateLevels !== undefined && (!str(m.privateLevels, 80000) || !/^[A-Za-z0-9+/]{16}\.[A-Za-z0-9+/]+={0,2}$/.test(m.privateLevels)))
+    throw new Error("Invalid protected student levels.");
   if (m.pageContent !== undefined) {
     if (!m.pageContent || typeof m.pageContent !== "object" || Array.isArray(m.pageContent)) throw new Error("Invalid page content.");
     for (const [key, text] of Object.entries(m.pageContent)) {
@@ -100,7 +103,7 @@ export function validateManifest(value: unknown): asserts value is Manifest {
       !/^[a-zA-Z0-9_-]{1,80}$/.test(s.id) ||
       ids.has(s.id) ||
       !str(s.name, 100) ||
-      !str(s.level, 50) ||
+      (s.level !== undefined && !str(s.level, 50, true)) ||
       !Array.isArray(s.materials) ||
       s.materials.length > 200
     )

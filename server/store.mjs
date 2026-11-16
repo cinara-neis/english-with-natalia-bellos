@@ -41,6 +41,7 @@ export function fileStore(root) {
         if ((await fs.lstat(filename)).isSymbolicLink())
           throw Error("The manifest must not be a symbolic link.");
         const m = await read();
+        if (m.students.some((s) => Object.hasOwn(s, "level"))) throw Error("Migrate public student levels before saving appearance.");
         const student = m.students.find((s) => s.id === id);
         if (!student) throw Error("Student not found.");
         student.appearance = appearance;
@@ -103,24 +104,25 @@ export function githubStore(env) {
     cached = { token: result.token, expires: Date.parse(result.expires_at) };
     return cached.token;
   }
-  async function api(method, url, body) {
+  async function api(method, url, body, raw = false, allowMissing = false) {
     const r = await fetch("https://api.github.com" + url, {
       method,
       headers: {
         Authorization: "Bearer " + (await installationToken()),
-        Accept: "application/vnd.github+json",
+        Accept: raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
         "User-Agent": "natalia-student-community",
         ...(body ? { "Content-Type": "application/json" } : {}),
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
+    if (allowMissing && r.status === 404) return null;
     if (!r.ok)
       throw Error(
         r.status === 409 || r.status === 422
           ? "The blog changed while saving. Reload your appearance and try again."
           : "GitHub sync is unavailable. Check the community service configuration.",
       );
-    return r.json();
+    return raw ? Buffer.from(await r.arrayBuffer()).toString("base64") : r.json();
   }
   async function snapshot() {
     const file = await api(
@@ -135,11 +137,32 @@ export function githubStore(env) {
     };
   }
   return {
+    studentFiles: env.STUDENT_FILES_REPO && {
+      async read() { return (await privateIndex()).items; },
+      async update(change, upload) {
+        const { repo, sha, items } = await privateIndex();
+        const next = change(items);
+        if (next === items) return;
+        if (upload) await api("PUT", repo + "/contents/files/" + upload.id, {
+          message: "Store student file", content: upload.content,
+        });
+        await api("PUT", repo + "/contents/student-files.json", {
+          message: "Update student file visibility", ...(sha ? { sha } : {}),
+          content: Buffer.from(JSON.stringify(next)).toString("base64"),
+        });
+      },
+      async download(id) {
+        if (typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) throw Error("Invalid file ID.");
+        const repo = await privateRepository();
+        return api("GET", repo + "/contents/files/" + id, undefined, true);
+      },
+    },
     async read() {
       return (await snapshot()).manifest;
     },
     async saveAppearance(id, appearance) {
       const { sha, manifest } = await snapshot();
+      if (manifest.students.some((s) => Object.hasOwn(s, "level"))) throw Error("Migrate public student levels before saving appearance.");
       const student = manifest.students.find((s) => s.id === id);
       if (!student) throw Error("Student not found.");
       student.appearance = appearance;
@@ -155,4 +178,15 @@ export function githubStore(env) {
       return appearance;
     },
   };
+  async function privateRepository() {
+    const repo = `/repos/${encodeURIComponent(env.GITHUB_OWNER)}/${encodeURIComponent(env.STUDENT_FILES_REPO)}`;
+    const meta = await api("GET", repo);
+    if (meta.private !== true) throw Error("Student files require a private repository.");
+    return repo;
+  }
+  async function privateIndex() {
+    const repo = await privateRepository();
+    const file = await api("GET", repo + "/contents/student-files.json", undefined, false, true);
+    return { repo, sha: file?.sha, items: file ? JSON.parse(Buffer.from(file.content, "base64").toString("utf8")) : [] };
+  }
 }

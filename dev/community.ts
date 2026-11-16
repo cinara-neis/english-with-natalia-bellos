@@ -1,6 +1,8 @@
 import type { Plugin } from "vite";
 import { createCommunity, accountLoader } from "../server/community.mjs";
 import { fileStore } from "../server/store.mjs";
+import { localLevelsKey } from "../server/levelsKey.mjs";
+import { localStudentFiles } from "../server/studentFiles.mjs";
 export function community(): Plugin {
   return {
     name: "student-community",
@@ -9,6 +11,8 @@ export function community(): Plugin {
       const hub = createCommunity({
         store: fileStore(server.config.root),
         accounts: accountLoader(server.config.root),
+        studentFiles: localStudentFiles(server.config.root),
+        levelsKey: () => localLevelsKey(server.config.root),
         allowedOrigin: (origin, req) => {
           const host = req.headers.host || "";
           return (

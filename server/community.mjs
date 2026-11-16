@@ -10,6 +10,8 @@ import { promisify } from "node:util";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import palette from "../shared/appearance.json" with { type: "json" };
+import { readPrivateLevels } from "../shared/privateLevels.mjs";
+import { studentFileAction } from "./studentFiles.mjs";
 const scrypt = promisify(scryptCallback),
   hash = (s) => createHash("sha256").update(s).digest("hex");
 export function accountLoader(root, env = {}) {
@@ -27,7 +29,7 @@ export function accountLoader(root, env = {}) {
     }
   };
 }
-export function createCommunity({ store, accounts, allowedOrigin }) {
+export function createCommunity({ store, accounts, allowedOrigin, levelsKey = async () => undefined, studentFiles, teacherAccess }) {
   const sessions = new Map(),
     attempts = new Map(),
     tickets = new Map(),
@@ -178,6 +180,16 @@ export function createCommunity({ store, accounts, allowedOrigin }) {
         );
         return reply(200, { ok: true });
       }
+      if (req.method === "POST" && route.startsWith("/files/")) {
+        const action = route.slice("/files/".length);
+        const teacher = action.startsWith("teacher-");
+        const session = teacher ? null : await authenticated(req);
+        if (teacher && !(await teacherAccess?.(req))) return reply(401, { error: "Teacher sign-in is required." });
+        if (req.headers.authorization && !teacher && !session) return reply(401, { error: "Sign in again." });
+        const body = await json(req, action === "upload" ? 3 * 1024 * 1024 : 4096);
+        const result = await studentFileAction(studentFiles, teacher ? action.slice(8) : action, body, session?.id, teacher);
+        return reply(result.status, result.data);
+      }
       if (route === "/appearance" || route === "/appearance/read") {
         const session = await authenticated(req);
         if (!session)
@@ -186,10 +198,22 @@ export function createCommunity({ store, accounts, allowedOrigin }) {
               "Sign in with your own student account to sync your appearance.",
           });
         if (req.method === "GET" || route === "/appearance/read") {
-          const s = (await store.read()).students.find(
+          const manifest = await store.read();
+          const s = manifest.students.find(
             (s) => s.id === session.id,
           );
+          if (!s) return reply(404, { error: "Student account not found." });
+          let level = null;
+          let levelAvailable = true;
+          try {
+            const levels = await readPrivateLevels(manifest.privateLevels, await levelsKey());
+            if (Object.hasOwn(levels, session.id)) level = levels[session.id];
+          } catch {
+            levelAvailable = false;
+          }
           return reply(200, {
+            level,
+            levelAvailable,
             appearance: s?.appearance || {
               font: "classic",
               background: "sage",

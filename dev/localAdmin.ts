@@ -7,6 +7,9 @@ import { verifyFile } from "../worker/index";
 import { localAuth } from "./localAuth";
 import { acquireFileLock } from "../server/store.mjs";
 import { setPassword } from "../server/passwords.mjs";
+import { localStudentFiles, studentFileAction } from "../server/studentFiles.mjs";
+import { localLevelsKey } from "../server/levelsKey.mjs";
+import { protectLevels, revealLevels } from "../shared/privateLevels.mjs";
 
 const revision = (s: string) => createHash("sha256").update(s).digest("hex");
 const paths = (m: Manifest) =>
@@ -45,7 +48,7 @@ export function localAdmin(): Plugin {
       const manifestPath = path.join(publicDir, "content/manifest.json");
       server.middlewares.use("/__local-admin", async (req, res, next) => {
         if (
-          !["/content", "/publish", "/status", "/login", "/logout", "/student-password", "/teacher-password"].includes(
+          !["/content", "/publish", "/status", "/login", "/logout", "/student-password", "/teacher-password", "/student-files/list", "/student-files/download"].includes(
             req.url?.split("?")[0] || "",
           )
         )
@@ -112,6 +115,18 @@ export function localAdmin(): Plugin {
             auth.logout(req.headers.authorization);
             return reply(200, { ok: true });
           }
+          if (req.method === "POST" && ["/student-files/list", "/student-files/download"].includes(req.url || "")) {
+            if (req.headers.origin !== `http://${host}`) return reply(403, { error: "Origin not authorised." });
+            const chunks: Buffer[] = [];
+            let bytes = 0;
+            for await (const piece of req) {
+              bytes += piece.length;
+              if (bytes > 4096) return reply(413, { error: "Request too large." });
+              chunks.push(Buffer.from(piece));
+            }
+            const result = await studentFileAction(localStudentFiles(server.config.root), req.url!.split("/").pop()!, JSON.parse(Buffer.concat(chunks).toString("utf8")), undefined, true);
+            return reply(result.status, result.data);
+          }
           if (req.method === "POST" && ["/student-password", "/teacher-password"].includes(req.url || "")) {
             if (req.headers.origin !== `http://${host}` || !req.headers["content-type"]?.startsWith("application/json")) return reply(403, { error: "Origin not authorised." });
             const chunks: Buffer[] = [];
@@ -144,7 +159,7 @@ export function localAdmin(): Plugin {
             const raw = await fs.readFile(manifestPath, "utf8");
             const manifest = JSON.parse(raw);
             validateManifest(manifest);
-            return reply(200, { head: revision(raw), manifest });
+            return reply(200, { head: revision(raw), manifest: await revealLevels(manifest, await localLevelsKey(server.config.root)) });
           }
           if (req.method !== "POST" || req.url !== "/publish")
             return reply(405, { error: "Method not allowed." });
@@ -206,7 +221,9 @@ export function localAdmin(): Plugin {
             if (!old.has(p) && !added.has(p))
               throw Error("A new material is missing its uploaded file.");
           const saved: string[] = [];
-          const nextRaw = JSON.stringify(input.manifest, null, 2) + "\n";
+          // Refuse to overwrite private data if its existing key is unavailable.
+          await revealLevels(previous, await localLevelsKey(server.config.root));
+          const nextRaw = JSON.stringify(await protectLevels(input.manifest, await localLevelsKey(server.config.root, input.manifest.students.some((s: { level?: string }) => !!s.level?.trim()))), null, 2) + "\n";
           const temporary = manifestPath + "." + randomUUID() + ".tmp";
           try {
             for (const u of input.uploads) {

@@ -5,6 +5,9 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { randomBytes, scryptSync } from "node:crypto";
 import fixture from "../public/content/manifest.json";
+import { localLevelsKey } from "../server/levelsKey.mjs";
+import { readPrivateLevels } from "../shared/privateLevels.mjs";
+const { privateLevels: _protectedFixture, ...publicFixture } = fixture as typeof fixture & { privateLevels?: string };
 describe("Real local project storage", () => {
   async function project(
     run: (
@@ -24,7 +27,7 @@ describe("Real local project storage", () => {
     });
     await fs.writeFile(
       path.join(root, "public/content/manifest.json"),
-      JSON.stringify(fixture),
+      JSON.stringify(publicFixture),
     );
     const password = randomBytes(24).toString("base64url"),
       salt = randomBytes(16);
@@ -102,6 +105,7 @@ describe("Real local project storage", () => {
       const first = await request("/content");
       expect(first.status).toBe(200);
       const manifest = structuredClone(first.data.manifest);
+      manifest.students[0].level = "B2 · Upper intermediate";
       manifest.pageContent = { homeTitle: "New lesson season", contactIntro: "Contact Natalia for your next lesson." };
       manifest.about = "My updated teacher introduction.";
       manifest.email = "teacher@example.com";
@@ -139,12 +143,15 @@ describe("Real local project storage", () => {
       expect(disk.about).toBe("My updated teacher introduction.");
       expect(disk.students[0].materials[0].text).toBe("An updated activity from the teacher.");
       expect(disk.students[1]).toEqual(fixture.students[1]);
+      expect(disk.students[0]).not.toHaveProperty("level");
+      expect(await readPrivateLevels(disk.privateLevels, await localLevelsKey(root))).toEqual({ [fixture.students[0].id]: "B2 · Upper intermediate" });
       expect(
         await fs.readFile(
           path.join(root, "public/content/uploads/local-lesson.pdf"),
         ),
       ).toEqual(pdf);
       const reloaded = await request("/content");
+      expect(reloaded.data.manifest.students[0].level).toBe("B2 · Upper intermediate");
       expect(reloaded.data.head).toBe(saved.data.head);
       const removed = structuredClone(reloaded.data.manifest);
       removed.students[0].materials = removed.students[0].materials.filter(

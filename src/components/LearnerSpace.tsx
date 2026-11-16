@@ -4,6 +4,7 @@ import palette from "../../shared/appearance.json";
 import { communityBase, communityRequest } from "../community";
 import * as S from "../styles";
 import { profilePhoto } from "../profilePhoto";
+import StudentFiles from "./StudentFiles";
 type Appearance = NonNullable<Student["appearance"]>;
 export default function LearnerSpace({
   student,
@@ -18,6 +19,8 @@ export default function LearnerSpace({
     student.appearance || { font: "classic", background: "sage" },
   );
   const [session, setSession] = useState(""),
+    [level, setLevel] = useState<string | null>(null),
+    [levelAvailable, setLevelAvailable] = useState(true),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
@@ -50,12 +53,70 @@ export default function LearnerSpace({
       <S.Eyebrow>MAKE YOURSELF AT HOME</S.Eyebrow>
       <h2 id="learner-space-heading" style={compact ? { fontSize: "1.4rem" } : undefined}>Your space, your style</h2>
       {appearance.photo ? <img src={appearance.photo} alt={`Profile photo of ${student.name}`} width={96} height={96} style={{ borderRadius: "50%", objectFit: "cover" }} /> : <p>No profile photo yet.</p>}
+      {session && <S.Notice><strong>Your English level: </strong>{!levelAvailable ? "Unavailable. Ask your teacher." : level || "Not set yet."}</S.Notice>}
       <p>
         Choose a font and background for {student.name}’s page. Your saved look
         is shared across devices after student sign-in.
       </p>
       <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
         <S.ScreenReaderOnly as="legend">Student appearance</S.ScreenReaderOnly>
+        {!session && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void task(async () => {
+                const logged = await communityRequest("/login", {
+                  studentId: student.id,
+                  password,
+                });
+                const current = await communityRequest(
+                  "/appearance/read",
+                  {},
+                  logged.session,
+                );
+                setSession(logged.session);
+                setLevel(typeof current.level === "string" ? current.level : null);
+                setLevelAvailable(current.levelAvailable !== false);
+                setAppearance(current.appearance);
+                onChange(current.appearance);
+                setMessage(
+                  "Signed in as " +
+                    student.name +
+                    ". Your saved appearance is loaded. Choose a look and save it.",
+                );
+              });
+            }}
+          >
+            <label htmlFor="student-password">
+              Student password for {student.name}
+            </label>
+            <input
+              id="student-password"
+              type="password"
+              autoComplete="current-password"
+              minLength={12}
+              maxLength={256}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              aria-describedby="student-access-help"
+            />
+            <p id="student-access-help">
+              <small>
+                Ask the teacher for your own student password. This account can
+                change only your appearance, never teacher tools. This is not
+                the teacher password.
+              </small>
+            </p>
+            <S.Button type="submit" disabled={!communityBase}>
+              {busy ? "Signing in…" : "Student sign-in"}
+            </S.Button>
+            <details style={{ marginTop: "1rem" }}>
+              <summary style={{ cursor: "pointer" }}>Forgot your password?</summary>
+              <p>Ask your teacher to reset your student password. The teacher provides your first password too. There is no automatic email reset.</p>
+            </details>
+          </form>
+        )}
         {session ? <>
           <label htmlFor="student-photo">Your profile photo</label>
           <input id="student-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="student-photo-help"
@@ -101,61 +162,7 @@ export default function LearnerSpace({
           <strong style={{ display: "block", fontSize: "1.25rem" }}>Small steps, big discoveries.</strong>
           <span>Your English journey starts here. Aa Bb 123</span>
         </div>
-        {!session ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void task(async () => {
-                const logged = await communityRequest("/login", {
-                  studentId: student.id,
-                  password,
-                });
-                const current = await communityRequest(
-                  "/appearance/read",
-                  {},
-                  logged.session,
-                );
-                setSession(logged.session);
-                setAppearance(current.appearance);
-                onChange(current.appearance);
-                setMessage(
-                  "Signed in as " +
-                    student.name +
-                    ". Your saved appearance is loaded. Choose a look and save it.",
-                );
-              });
-            }}
-          >
-            <label htmlFor="student-password">
-              Student password for {student.name}
-            </label>
-            <input
-              id="student-password"
-              type="password"
-              autoComplete="current-password"
-              minLength={12}
-              maxLength={256}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              aria-describedby="student-access-help"
-            />
-            <p id="student-access-help">
-              <small>
-                Ask the teacher for your own student password. This account can
-                change only your appearance, never teacher tools. This is not
-                the teacher password.
-              </small>
-            </p>
-            <S.Button type="submit" disabled={!communityBase}>
-              {busy ? "Signing in…" : "Student sign-in"}
-            </S.Button>
-            <details style={{ marginTop: "1rem" }}>
-              <summary style={{ cursor: "pointer" }}>Forgot your password?</summary>
-              <p>Ask your teacher to reset your student password. The teacher provides your first password too. There is no automatic email reset.</p>
-            </details>
-          </form>
-        ) : (
+        {session && (
           <S.Row style={{ marginTop: 16 }}>
             <S.Button
               onClick={() =>
@@ -189,6 +196,7 @@ export default function LearnerSpace({
           </S.Row>
         )}
       </fieldset>
+      {session && <StudentFiles studentId={student.id} session={session} />}
       {!communityBase && (
         <S.Notice>
           Preview is available. Cross-device saving needs the community service

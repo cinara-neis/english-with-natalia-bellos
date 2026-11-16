@@ -4,6 +4,7 @@ import {
   validateManifest,
   type Manifest,
 } from "../shared/content";
+import { protectLevels, revealLevels } from "../shared/privateLevels.mjs";
 export interface Env {
   FRONTEND_URL: string;
   GITHUB_OWNER: string;
@@ -12,6 +13,7 @@ export interface Env {
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   SESSION_SECRET: string;
+  STUDENT_LEVELS_KEY?: string;
   ALLOWED_LOGIN: string;
 }
 class HttpError extends Error {
@@ -256,6 +258,8 @@ async function publish(request: Request, token: string, env: Env) {
       409,
       "There are new changes on GitHub. Copy your draft and sign in again before publishing.",
     );
+  await revealLevels(current.manifest, env.STUDENT_LEVELS_KEY);
+  const publicManifest = await protectLevels(input.manifest, env.STUDENT_LEVELS_KEY);
   const old = paths(current.manifest),
     next = paths(input.manifest);
   const uploaded = new Set<string>();
@@ -308,7 +312,7 @@ async function publish(request: Request, token: string, env: Env) {
     path: "public/content/manifest.json",
     mode: "100644",
     type: "blob",
-    content: JSON.stringify(input.manifest, null, 2) + "\n",
+    content: JSON.stringify(publicManifest, null, 2) + "\n",
   });
   const newTree = await gh(`${r}/git/trees`, token, "POST", {
     base_tree: current.tree,
@@ -454,10 +458,14 @@ export default {
         throw new HttpError(403, "Origin not authorised.");
       if (request.method === "OPTIONS")
         return new Response(null, { status: 204, headers: cors });
+      if (url.pathname === "/teacher-session" && request.method === "GET") {
+        await auth(request, env);
+        return Response.json({ teacherSession: true }, { headers: cors });
+      }
       if (url.pathname === "/content" && request.method === "GET") {
         const token = await auth(request, env);
         const { head, manifest } = await snapshot(token, env);
-        return Response.json({ head, manifest }, { headers: cors });
+        return Response.json({ head, manifest: await revealLevels(manifest, env.STUDENT_LEVELS_KEY) }, { headers: cors });
       }
       if (url.pathname === "/publish" && request.method === "POST") {
         if (
