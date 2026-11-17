@@ -65,11 +65,12 @@ html[data-high-contrast="true"] input::placeholder { color: #fff !important; }
 html[data-high-contrast="true"] progress { accent-color: #ffff00 !important; }
 @media (forced-colors: active) { button, input, select, textarea, dialog { border: 2px solid ButtonText; } :focus-visible { outline: 3px solid Highlight; } }
 `;
-export const Shell = styled.div`
+export const Shell = styled.div<{ $wide?: boolean }>`
   overflow-wrap: anywhere;
   min-width: 0;
   display: grid;
-  grid-template-columns: clamp(15rem, 22vw, 18rem) minmax(0, 1fr);
+  grid-template-columns: ${p => p.$wide ? "minmax(0, 1fr)" : "clamp(15rem, 22vw, 18rem) minmax(0, 1fr)"};
+  > [hidden] { display: none; }
   min-height: 100vh;
   > * {
     min-width: 0;

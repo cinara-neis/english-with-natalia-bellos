@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Github, Plus, Save, Trash2, LogOut } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Github, Plus, Trash2, LogOut, Users, FolderOpen, ChartNoAxesColumn, Newspaper, FileText, Image, Contact, Settings } from "lucide-react";
 import {
   fileKind,
   MAX_FILE,
@@ -16,6 +16,7 @@ import {
   localEditing,
 } from "../lib";
 import * as S from "../styles";
+import styled from "styled-components";
 import TeacherAccess from "./TeacherAccess";
 import TeacherPostEditor from "./TeacherPostEditor";
 import StudentProgressEditor from "./StudentProgressEditor";
@@ -25,7 +26,72 @@ import PageContentEditor from "./PageContentEditor";
 import MaterialEditor from "./MaterialEditor";
 import StudentFiles from "./StudentFiles";
 type UploadData = { path: string; content: string };
+const tools = [
+  { id: "documents", label: "Student documents", icon: FolderOpen },
+  { id: "students", label: "Students", icon: Users },
+  { id: "progress", label: "Learning progress", icon: ChartNoAxesColumn },
+  { id: "posts", label: "Homepage posts", icon: Newspaper },
+  { id: "pages", label: "Page texts", icon: FileText },
+  { id: "portrait", label: "Photo and stickers", icon: Image },
+  { id: "details", label: "Contacts and About", icon: Contact },
+  { id: "access", label: "Account", icon: Settings },
+] as const;
+
+const Dashboard = styled.div`
+  display: grid;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: start;
+  @media (max-width: 48rem) { grid-template-columns: minmax(0, 1fr); }
+`;
+
+const Menu = styled.nav`
+  display: grid;
+  gap: .25rem;
+  padding: .75rem;
+  border: 1px solid #dce4d5;
+  border-radius: 1rem;
+  background: #eef1e7;
+  @media (min-width: 48.001rem) {
+    position: sticky;
+    top: 1rem;
+  }
+  @media (max-width: 48rem) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  }
+`;
+
+const MenuButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  text-align: left;
+  color: #263a34;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: .55rem;
+  font: inherit;
+  padding: .65rem;
+  min-height: 44px;
+  cursor: pointer;
+  &:hover { background: #e1e9d6; }
+  &[aria-current="true"] {
+    background: #dce7d3;
+    border-color: #526548;
+    font-weight: 700;
+  }
+  svg { flex: none; }
+`;
+
+const Workspace = styled.div`
+  min-width: 0;
+  h2 { scroll-margin-top: 6rem; }
+`;
+
 export default function Admin({ publicData }: { publicData: Manifest }) {
+  const [section, setSection] = useState<(typeof tools)[number]["id"]>("documents");
+  const sectionHeading = useRef<HTMLHeadingElement>(null);
+  const focusSection = useRef(false);
   const [session, setSession] = useState("");
   const [localPassword, setLocalPassword] = useState("");
   const [teacherEmail, setTeacherEmail] = useState("");
@@ -50,6 +116,12 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
   const [commit, setCommit] = useState("");
   const [pendingAnnouncement, setPendingAnnouncement] = useState("");
   const chosen = draft.students.find((s) => s.id === studentId);
+  useEffect(() => {
+    if (!focusSection.current) return;
+    focusSection.current = false;
+    sectionHeading.current?.focus({ preventScroll: true });
+    sectionHeading.current?.scrollIntoView?.({ block: "nearest" });
+  }, [section]);
   useEffect(() => {
     if (localEditing)
       adminRequest("/status", "")
@@ -192,13 +264,12 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
       setHead(result.head);
       setUploads([]);
       setDirty(false);
-      setPendingAnnouncement("");
       setCommit(result.commit);
       setPendingAnnouncement("");
       setMessage(
         localEditing
           ? `Saved to this project. Your files are in public/content/uploads and the student list is in public/content/manifest.json.${result.retained ? " Some unreferenced files could not be removed from disk." : ""} This does not publish the blog online.`
-          : "Saved to GitHub. Automatic deployment has started. Visitors will see the update when the Pages workflow finishes.",
+          : "Saved to GitHub. Visitors will see the update after the GitHub Pages deployment succeeds.",
       );
       if (localEditing) window.dispatchEvent(new Event("blog-content-saved"));
     });
@@ -230,70 +301,11 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
   }
   return (
     <>
-      <S.Eyebrow>TEACHER’S DESK</S.Eyebrow>
-      <h1>A space to create.</h1>
-      <p>Manage your pages, contacts, students and learning materials here. Your site administrator takes care of the technical setup.</p>
-      {session && <TeacherAccess onlinePassword={onlinePassword} />}
+      <h1>Teacher dashboard</h1>
       {!session && <details style={{ marginBottom: "1rem" }}><summary style={{ cursor: "pointer" }}>Forgot your teacher password?</summary><p>{localEditing ? "The project owner can reset teacher access by running npm run admin:setup on this computer. A visitor cannot reset it through this public page." : onlinePassword ? "Ask the site administrator to reset your teacher password." : "Teacher access uses your authorised GitHub account. Recover that account through GitHub."}</p>{!localEditing && !onlinePassword && <a href="https://github.com/password_reset" target="_blank" rel="noopener noreferrer">Recover GitHub account (opens in a new tab)</a>}</details>}
-      {session && !onlinePassword && <PasswordManager session={session} onTeacherChanged={() => { setSession(""); setMessage("Password changed. Sign in with your new teacher password."); }} />}
-      {session && api && (
-        <S.Row aria-label="Teacher tools">
-          {[
-            ["student-tools", "Student documents"],
-            ["progress-editor-heading", "Learning progress"],
-            ["journal-editor-heading", "Homepage posts"],
-            ["page-content-heading", "Page texts and image"],
-            ["blog-details-heading", "Contacts and About"],
-            ["about", "Edit About"],
-          ].map(([id, label]) => (
-            <S.Button
-              key={id}
-              $secondary
-              type="button"
-              disabled={id === "progress-editor-heading" && !chosen}
-              onClick={() => {
-                const target = document.getElementById(id);
-                target?.focus();
-                target?.scrollIntoView({ block: "start" });
-              }}
-            >
-              {label}
-            </S.Button>
-          ))}
-        </S.Row>
-      )}
-      {session && api && (
-        <S.SaveBar>
-          <S.Button type="button" disabled={!dirty || busy} onClick={publish}>
-            {busy
-              ? "Please wait…"
-              : localEditing
-                ? "Save all to project"
-                : "Publish all changes"}
-          </S.Button>
-          <small>
-            {dirty
-              ? "Your edits are still a draft. Save before opening the homepage."
-              : "Progress, posts and documents use the same save action."}
-          </small>
-        </S.SaveBar>
-      )}
-      {localEditing && session && (
-        <S.Notice>
-          <strong>Local project editor</strong>
-          <br />
-          Choose a student, add a document and click Save to project. Files are
-          saved on this computer. Teacher password sign-in is required.
-        </S.Notice>
-      )}
       <S.ScreenReaderOnly role="status" aria-live="polite">
         {busy ? "Working. Please wait." : pendingAnnouncement}
       </S.ScreenReaderOnly>
-      <S.Notice>
-        All published names, progress, feedback, posts and files are public.
-        Deleting removes material from the current version; copies in Git
-        history and previous downloads remain.
-      </S.Notice>
       {!api ? (
         <S.Panel>
           <h2>Teacher access is locked</h2>
@@ -372,49 +384,52 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
           )}
         </S.Panel>
       ) : (
-        <>
-          <S.Row>
-            <S.Chip>
-              {dirty
-                ? "Unsaved changes"
-                : localEditing
-                  ? "Local project editor"
-                  : "Everything saved to GitHub"}
-            </S.Chip>
-            {
-              <S.Button
-                $secondary
+        <Dashboard>
+          <Menu aria-label="Teacher tools">
+            {tools.map(({ id, label, icon: Icon }) => (
+              <MenuButton
+                key={id}
+                type="button"
                 disabled={busy}
+                aria-current={section === id ? "true" : undefined}
                 onClick={() => {
-                  if (
-                    !dirty ||
-                    confirm("Discard unpublished changes and sign out?")
-                  ) {
-                    if (localEditing)
-                      void adminRequest("/logout", session, {}).catch(() => {});
-                    setSession("");
-                    setDirty(false);
-                    setUploads([]);
-                  }
+                  if (section === id) return;
+                  focusSection.current = true;
+                  setSection(id);
                 }}
               >
-                <LogOut size={15} /> Sign out
+                <Icon size={18} aria-hidden="true" />
+                {label}
+              </MenuButton>
+            ))}
+          </Menu>
+          <Workspace>
+            <S.SaveBar>
+              <S.Button type="button" disabled={!dirty || busy} onClick={publish}>
+                {busy ? "Please wait…" : localEditing ? "Save to project" : "Publish changes"}
               </S.Button>
-            }
-          </S.Row>
-          <fieldset
-            disabled={busy}
-            aria-busy={busy}
-            style={{ border: 0, padding: 0, margin: 0 }}
-          >
-            <S.ScreenReaderOnly as="legend">Blog management</S.ScreenReaderOnly>
+              <S.Chip>{dirty ? "Unsaved changes" : "All changes saved"}</S.Chip>
+            </S.SaveBar>
+            {error && <S.Notice $error role="alert">{error}</S.Notice>}
+            {message && <S.Notice role="status">{message}</S.Notice>}
+            {commit && repoUrl && !localEditing && (
+              <p><a href={`${repoUrl}/actions`} target="_blank" rel="noreferrer">
+                Track deployment on GitHub Actions (opens in a new tab)
+              </a></p>
+            )}
+            <h2 ref={sectionHeading} tabIndex={-1}>{tools.find(tool => tool.id === section)?.label}</h2>
+            {section === "documents" && (
+              <p>Published materials are public. Removed files can remain in Git history or previous downloads.</p>
+            )}
+            <fieldset disabled={busy} aria-busy={busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+              <S.ScreenReaderOnly as="legend">Blog management</S.ScreenReaderOnly>
+              <div hidden={section !== "documents" && section !== "students" && section !== "progress"}>
             <S.Panel>
               <h3 id="student-tools" tabIndex={-1}>
-                1. Choose a student for this document
+                Select a student
               </h3>
               <p id="student-selection-help">
-                Select a student to open their document form. Each material is
-                added only to the selected student.
+                Choose whose information you want to manage.
               </p>
               <label htmlFor="studentSelect">Student to manage</label>
               <select
@@ -439,15 +454,17 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
               </select>
               <S.Notice role="status">
                 {chosen
-                  ? `New materials will be added only to ${chosen.name}.`
+                  ? `Selected student: ${chosen.name}.`
                   : draft.students.length
-                    ? "Choose a student to open the upload form."
-                    : "Add your first student above to upload a document."}
+                    ? "Choose a student to continue."
+                    : "Add your first student in Students."}
               </S.Notice>
             </S.Panel>
+              </div>
+              <div hidden={section !== "documents"}>
             {chosen && (
               <S.Panel>
-                <h2>2. Add a material for {chosen.name}</h2>
+                <h3>Add a material for {chosen.name}</h3>
                 <form onSubmit={addMaterial}>
                   <label htmlFor="materialTitle">Title</label>
                   <input
@@ -566,8 +583,9 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                 ))}
               </S.Panel>
             )}
-            {chosen && <StudentFiles key={chosen.id} studentId={chosen.id} session={session} teacher />}
-            {chosen && (
+            {section === "documents" && chosen && <StudentFiles key={chosen.id} studentId={chosen.id} session={session} teacher />}
+              </div>
+            {section === "progress" && chosen && (
               <StudentProgressEditor
                 student={chosen}
                 onChange={(student) =>
@@ -580,12 +598,21 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                 }
               />
             )}
-            <TeacherPostEditor
+            {section === "posts" && <TeacherPostEditor
               draft={draft}
               onChange={change}
               onNotice={setPendingAnnouncement}
-            />
-            <PageContentEditor draft={draft} onChange={change} />
+            />}
+            {(section === "pages" || section === "portrait") && (
+              <PageContentEditor
+                key={section}
+                section={section}
+                draft={draft}
+                onChange={change}
+                onBusyChange={setBusy}
+              />
+            )}
+            {section === "details" && (
             <S.Panel>
               <h2 id="blog-details-heading" tabIndex={-1}>Your blog</h2>
               <label htmlFor="blogName">Blog name</label>
@@ -619,9 +646,9 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                 value={draft.about}
                 onChange={(e) => change({ ...draft, about: e.target.value })}
               />
-            </S.Panel>
-            <S.Panel>
-              <h2>Our students</h2>
+            </S.Panel>)}
+            {section === "students" && <S.Panel>
+              <h3>Add or manage a student</h3>
               <form onSubmit={addStudent}>
                 <S.Row style={{ alignItems: "end" }}>
                   <div style={{ flex: 1 }}>
@@ -719,42 +746,35 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                   />
                 </>
               )}
-            </S.Panel>
-            <S.Row>
-              <S.Button disabled={!dirty || busy} onClick={publish}>
-                <Save size={16} />
-                {busy
-                  ? "Please wait…"
-                  : localEditing
-                    ? "Save to project"
-                    : "Publish changes"}
-              </S.Button>
-              <small>
-                Review your draft before publishing. Signing out discards
-                unsaved changes.
-              </small>
-            </S.Row>
-          </fieldset>
-        </>
+            </S.Panel>}
+            {section === "access" && (
+              <S.Panel>
+                <TeacherAccess onlinePassword={onlinePassword} />
+      {!onlinePassword && <PasswordManager session={session} onTeacherChanged={() => { setSession(""); setMessage("Password changed. Sign in with your new teacher password."); }} />}
+                <S.Button
+                  type="button"
+                  $secondary
+                  onClick={() => {
+                    if (dirty && !confirm("Discard unpublished changes and sign out?")) return;
+                    if (localEditing) void adminRequest("/logout", session, {}).catch(() => {});
+                    setSession("");
+                    setDirty(false);
+                    setUploads([]);
+                    setMessage("");
+                    setError("");
+                    setCommit("");
+                  }}
+                >
+                  <LogOut size={16} /> Sign out
+                </S.Button>
+              </S.Panel>
+            )}
+            </fieldset>
+          </Workspace>
+        </Dashboard>
       )}
-      {error && (
-        <S.Notice $error role="alert">
-          {error}
-        </S.Notice>
-      )}
-      {message && <S.Notice role="status">{message}</S.Notice>}
-      {commit && (
-        <a href={commit} target="_blank" rel="noreferrer">
-          View commit on GitHub (opens in a new tab) ↗
-        </a>
-      )}
-      {session && repoUrl && !localEditing && (
-        <p>
-          <a href={`${repoUrl}/actions`} target="_blank" rel="noreferrer">
-            Track deployment on GitHub Actions (opens in a new tab) ↗
-          </a>
-        </p>
-      )}
+      {!session && error && <S.Notice $error role="alert">{error}</S.Notice>}
+      {!session && message && <S.Notice role="status">{message}</S.Notice>}
     </>
   );
 }

@@ -12,20 +12,25 @@ import axe from "axe-core";
 import App from "../src/App";
 import AccessibilityControls from "../src/components/AccessibilityControls";
 import manifest from "../public/content/manifest.json";
+let publicManifest: typeof manifest & { teacherStickers?: string[] };
 vi.mock("../src/lib", () => ({
   localEditing: false,
   base: "/",
   api: "https://admin.test",
   repoUrl: "https://github.com/teacher/blog",
   branch: "main",
-  loadPublic: async () => structuredClone(manifest),
+  loadPublic: async () => structuredClone(publicManifest),
   login: async () => "test-session",
-  adminRequest: async () => ({
-    head: "abc",
-    manifest: structuredClone(manifest),
-  }),
+  adminRequest: async (path: string, _session: string, body?: { manifest: typeof publicManifest }) => {
+    if (path === "/publish" && body) {
+      publicManifest = structuredClone(body.manifest);
+      return { head: "def", commit: "https://github.com/teacher/blog/commit/def" };
+    }
+    return { head: "abc", manifest: structuredClone(publicManifest) };
+  },
 }));
 beforeEach(() => {
+  publicManifest = { ...structuredClone(manifest), teacherStickers: [] };
   window.history.replaceState({}, "", "/");
   localStorage.clear();
   document.documentElement.lang = "en";
@@ -167,7 +172,7 @@ describe("English interface and accessibility", () => {
       name: "Student to manage",
     });
     await user.selectOptions(studentSelect, "matheus");
-    expect(screen.getByRole("textbox", { name: "Blog name" })).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Blog name" })).toBeNull();
     expect(screen.getByRole("group", { name: "Blog management" })).toBeTruthy();
     expect(
       screen
@@ -182,6 +187,23 @@ describe("English interface and accessibility", () => {
     expect(
       screen.getByRole("textbox", { name: "Image description (required)" }),
     ).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Contacts and About" }));
+    expect(screen.getByRole("textbox", { name: "Blog name" })).toBeTruthy();
+    expect(screen.queryByRole("combobox", { name: "Student to manage" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Photo and stickers" }));
+    await user.click(screen.getByRole("button", { name: "English books", pressed: false }));
+    expect(screen.getByRole("button", { name: "English books", pressed: true })).toBeTruthy();
+    await user.click(screen.getByRole("link", { name: "Home" }));
+    await screen.findByRole("heading", { name: /Small steps/ });
+    expect(screen.queryByRole("button", { name: "English books" })).toBeNull();
+
+    await user.click(screen.getByRole("link", { name: "Teacher login" }));
+    expect(await screen.findByRole("button", { name: "English books", pressed: true })).toBeTruthy();
     await audit(container);
+    await user.click(screen.getByRole("button", { name: "Publish changes" }));
+    await screen.findByText(/Saved to GitHub/);
+    expect(publicManifest.teacherStickers).toContain("books");
+    await user.click(screen.getByRole("link", { name: "Home" }));
+    expect(await screen.findByRole("button", { name: "English books" })).toBeTruthy();
   }, 60000);
 });

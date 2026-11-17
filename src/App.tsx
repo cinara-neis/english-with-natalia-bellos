@@ -35,6 +35,7 @@ function route(): Page {
 }
 export default function App() {
   const [page, setPage] = useState<Page>(route);
+  const [adminVisited, setAdminVisited] = useState(page === "admin");
   const [data, setData] = useState<Manifest>();
   const [error, setError] = useState("");
   const [selected, setSelected] = useState("");
@@ -90,7 +91,10 @@ export default function App() {
   useEffect(() => {
     reload();
     const change = () => {
-      setPage(route());
+      const next = route();
+      if (next === "admin") setAdminVisited(true);
+      else loadPublic().then(setData).catch(() => {});
+      setPage(next);
       setView(undefined);
     };
     window.addEventListener("hashchange", change);
@@ -132,8 +136,8 @@ export default function App() {
       >
         Skip to main content
       </S.SkipLink>
-      <S.Shell>
-        <S.Side>
+      <S.Shell $wide={page === "admin"}>
+        <S.Side hidden={page === "admin"}>
           <S.Brand>
             <TeacherPortrait photo={data?.teacherPhoto} stickers={data?.teacherStickers} />
             <p className="blog-name">
@@ -215,7 +219,6 @@ export default function App() {
             </nav>
           </S.Header>
           <S.Main
-            key={page}
             id="main-content"
             ref={mainRef}
             tabIndex={-1}
@@ -225,14 +228,15 @@ export default function App() {
                 : undefined
             }
           >
-            {error ? (
+            {(adminVisited || page === "admin") && data && (
+              <div hidden={page !== "admin"}><Admin publicData={data} /></div>
+            )}
+            {page === "admin" && data ? null : error ? (
               <S.Notice $error role="alert">
                 {error} <S.Button onClick={reload}>Try again</S.Button>
               </S.Notice>
             ) : !data ? (
               <p role="status">Getting our English corner ready…</p>
-            ) : page === "admin" ? (
-              <Admin publicData={data} />
             ) : page === "student-login" ? (
               studentAccount && accountStudent ? <>
                 <h1>My student account</h1>

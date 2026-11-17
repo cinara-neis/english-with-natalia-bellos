@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Manifest } from "../../shared/content";
 import { pageContent, type PageContent } from "../../shared/pageContent";
 import { profilePhoto } from "../profilePhoto";
+import styled from "styled-components";
 import * as S from "../styles";
 import TeacherPortrait from "./TeacherPortrait";
 import { teacherStickers, maxTeacherStickers, type TeacherSticker } from "../../shared/teacherStickers";
@@ -12,31 +13,57 @@ const sections: { title: string; fields: [keyof PageContent, string][] }[] = [
   { title: "Contact", fields: [["contactTitle", "Contact headline"], ["contactIntro", "Contact introduction"]] },
   { title: "Brand and footer", fields: [["tagline", "Blog tagline"], ["headerCaption", "Header caption"], ["sidebarQuote", "Sidebar quote"], ["sidebarCaption", "Sidebar caption"], ["aboutBadge", "About badge"], ["footer", "Footer message"]] },
 ];
-export default function PageContentEditor({ draft, onChange }: { draft: Manifest; onChange: (value: Manifest) => void }) {
+const PortraitSettings = styled(S.Panel)`
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+  fieldset { margin: 0 0 1rem; padding: 0; border: 0; }
+  @media (max-width: 43rem) { grid-template-columns: minmax(0, 1fr); }
+`;
+
+const PortraitPreview = styled.div`
+  background: #eef1e7;
+  border-radius: .75rem;
+  padding: 1rem;
+  text-align: center;
+  h3 { margin-top: 0; }
+`;
+
+export default function PageContentEditor({ draft, section, onChange, onBusyChange }: {
+  draft: Manifest;
+  section: "pages" | "portrait";
+  onChange: (value: Manifest) => void;
+  onBusyChange: (busy: boolean) => void;
+}) {
   const copy = pageContent(draft.pageContent);
   const stickers = draft.teacherStickers || [];
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  return <S.Panel aria-labelledby="page-content-heading">
-    <h2 id="page-content-heading" tabIndex={-1}>Page texts and teacher image</h2>
-    <p>Edit the words visitors see without changing the layout. These edits are drafts until you save or publish all changes. Plain text only; line breaks are supported in headlines.</p>
+  if (section === "pages") return <S.Panel>
+    <p>Edit the text visitors see on each page. Line breaks are supported in headlines.</p>
     {sections.map(section => <details key={section.title} style={{ marginBlock: "1rem" }}>
-      <summary style={{ cursor: "pointer", fontWeight: 600, paddingBlock: ".5rem" }}>{section.title} texts</summary>
+      <summary style={{ cursor: "pointer", fontWeight: 600, paddingBlock: ".5rem" }}>{section.title}</summary>
       {section.fields.map(([key, label]) => <div key={key}>
         <label htmlFor={`page-${key}`}>{label}</label>
         <textarea id={`page-${key}`} required maxLength={2000} rows={3} value={copy[key]}
           onChange={e => onChange({ ...draft, pageContent: { ...draft.pageContent, [key]: e.target.value } })} />
       </div>)}
     </details>)}
-    <details>
-      <summary style={{ cursor: "pointer", fontWeight: 600, paddingBlock: ".5rem" }}>Teacher profile image</summary>
-      <div style={{ padding: "1rem" }}><TeacherPortrait photo={draft.teacherPhoto} stickers={stickers} /></div>
-      <fieldset style={{ marginBlock: "1rem" }}>
+  </S.Panel>;
+
+  return <PortraitSettings>
+    <PortraitPreview>
+      <h3>Public sidebar preview</h3>
+      <TeacherPortrait photo={draft.teacherPhoto} stickers={stickers} />
+      <p>{draft.blogName}</p>
+    </PortraitPreview>
+    <div>
+      <fieldset>
         <legend>Profile stickers (up to three)</legend>
         {Object.entries(teacherStickers).map(([key, sticker]) => {
           const id = key as TeacherSticker;
           const selected = stickers.includes(id);
-          return <S.Button key={key} type="button" $secondary aria-pressed={selected}
+          return <S.Button key={key} type="button" $secondary={!selected} aria-pressed={selected}
             disabled={!selected && stickers.length >= maxTeacherStickers}
             style={{ margin: ".25rem" }}
             onClick={() => onChange({ ...draft, teacherStickers: selected ? stickers.filter(item => item !== id) : [...stickers, id] })}>
@@ -45,21 +72,32 @@ export default function PageContentEditor({ draft, onChange }: { draft: Manifest
         })}
       </fieldset>
       <label htmlFor="teacher-image">Upload your teacher image</label>
-      <input id="teacher-image" type="file" disabled={busy} accept="image/jpeg,image/png,image/webp" aria-describedby="teacher-image-help" onChange={async e => {
-        const file = e.target.files?.[0]; e.target.value = ""; if (!file) return;
-        setBusy(true); setError("");
-        try { const src = await profilePhoto(file); onChange({ ...draft, teacherPhoto: { src, alt: draft.teacherPhoto?.alt || `Portrait of ${draft.teacher}` } }); }
-        catch (e) { setError(e instanceof Error ? e.message : "Could not prepare image."); }
-        finally { setBusy(false); }
+      <input id="teacher-image" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="teacher-image-help" onChange={async e => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        onBusyChange(true);
+        setError("");
+        try {
+          const src = await profilePhoto(file);
+          onChange({ ...draft, teacherPhoto: { src, alt: draft.teacherPhoto?.alt || `Portrait of ${draft.teacher}` } });
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Could not prepare image.");
+        } finally {
+          onBusyChange(false);
+        }
       }} />
-      <p id="teacher-image-help"><small>JPG, PNG or WebP, up to 5 MB. Cropped to a small square thumbnail. Replaces the sidebar illustration after you save. Your image is public.</small></p>
-      {draft.teacherPhoto && <><label htmlFor="teacher-image-description">Teacher image description</label><input id="teacher-image-description" required maxLength={300} value={draft.teacherPhoto.alt} onChange={e => onChange({ ...draft, teacherPhoto: { ...draft.teacherPhoto!, alt: e.target.value } })} /><p /><S.Button $secondary type="button" onClick={() => { const { teacherPhoto: _photo, ...rest } = draft; onChange(rest); }}>Use original illustration</S.Button></>}
-    </details>
-    {error && <S.Notice role="alert" $error>{error}</S.Notice>}
-    <details style={{ marginTop: "1rem" }}>
-      <summary style={{ cursor: "pointer", paddingBlock: ".5rem" }}>Preview homepage text draft</summary>
-      <h3 style={{ whiteSpace: "pre-line", marginTop: 12 }}>{copy.homeTitle}</h3><p>{copy.homeIntro}</p>
-      <small>Text preview only. Save or publish to update the public page.</small>
-    </details>
-  </S.Panel>;
+      <p id="teacher-image-help"><small>JPG, PNG or WebP, up to 5 MB. Cropped to a square thumbnail.</small></p>
+      {draft.teacherPhoto && <>
+        <label htmlFor="teacher-image-description">Teacher image description</label>
+        <input id="teacher-image-description" required maxLength={300} value={draft.teacherPhoto.alt}
+          onChange={e => onChange({ ...draft, teacherPhoto: { ...draft.teacherPhoto!, alt: e.target.value } })} />
+        <S.Button $secondary type="button" onClick={() => {
+          const { teacherPhoto: _photo, ...rest } = draft;
+          onChange(rest);
+        }}>Use original illustration</S.Button>
+      </>}
+      {error && <S.Notice role="alert" $error>{error}</S.Notice>}
+    </div>
+  </PortraitSettings>;
 }
