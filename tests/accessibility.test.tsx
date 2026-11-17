@@ -208,7 +208,7 @@ describe("English interface and accessibility", () => {
     await user.click(screen.getByRole("button", { name: "Photo and stickers" }));
     await user.click(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: false }));
     expect(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: true })).toBeTruthy();
-    await user.click(screen.getByRole("link", { name: "Home" }));
+    await user.click(screen.getByRole("link", { name: "Go to Home" }));
     await screen.findByRole("heading", { name: /Your English/ });
     expect(screen.queryByRole("button", { name: "BTS-inspired seven-member group" })).toBeNull();
 

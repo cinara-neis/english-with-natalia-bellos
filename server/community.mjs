@@ -12,6 +12,7 @@ import path from "node:path";
 import palette from "../shared/appearance.json" with { type: "json" };
 import { readPrivateLevels } from "../shared/privateLevels.mjs";
 import { studentFileAction } from "./studentFiles.mjs";
+import { createRankings } from "./rankings.mjs";
 import { createStudentInvite, normalizeEmail, registerStudent } from "./studentAccounts.mjs";
 const scrypt = promisify(scryptCallback),
   hash = (s) => createHash("sha256").update(s).digest("hex");
@@ -30,7 +31,7 @@ export function accountLoader(root, env = {}) {
     }
   };
 }
-export function createCommunity({ store, accounts, allowedOrigin, levelsKey = async () => undefined, studentFiles, teacherAccess, studentAccounts }) {
+export function createCommunity({ store, accounts, allowedOrigin, levelsKey = async () => undefined, studentFiles, teacherAccess, studentAccounts, rankings }) {
   const sessions = new Map(),
     attempts = new Map(),
     tickets = new Map(),
@@ -72,6 +73,7 @@ export function createCommunity({ store, accounts, allowedOrigin, levelsKey = as
     }
     return s;
   }
+  const gameRankings = createRankings({ storage: rankings, authenticateStudent: authenticated });
   async function json(req, max = 4096) {
     let bytes = 0;
     const parts = [];
@@ -111,6 +113,10 @@ export function createCommunity({ store, accounts, allowedOrigin, levelsKey = as
       }
       if (req.headers["x-community-client"] !== "1")
         return reply(403, { error: "Use the student community interface." });
+      if (req.method === "POST" && route.startsWith("/ranking/")) {
+        const result = await gameRankings.handle(route.slice("/ranking".length), await json(req), req);
+        return reply(result.status, result.data);
+      }
       if (req.method === "POST" && route === "/status")
         return reply(200, { available: true });
       if (req.method === "POST" && route === "/accounts/invite") {
@@ -388,6 +394,7 @@ export function createCommunity({ store, accounts, allowedOrigin, levelsKey = as
     handleHttp,
     upgrade,
     close() {
+      gameRankings.close();
       clearInterval(timer);
       for (const ws of wss.clients) ws.terminate();
       wss.close();

@@ -116,12 +116,15 @@ export function githubStore(env) {
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
     if (allowMissing && r.status === 404) return null;
-    if (!r.ok)
-      throw Error(
+    if (!r.ok) {
+      const error = Error(
         r.status === 409 || r.status === 422
           ? "The blog changed while saving. Reload your appearance and try again."
           : "GitHub sync is unavailable. Check the community service configuration.",
       );
+      error.status = r.status;
+      throw error;
+    }
     return raw ? Buffer.from(await r.arrayBuffer()).toString("base64") : r.json();
   }
   async function snapshot() {
@@ -137,6 +140,27 @@ export function githubStore(env) {
     };
   }
   return {
+    rankings: env.STUDENT_FILES_REPO && {
+      async read() { return (await privateRankings()).value; },
+      async update(change) {
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const { repo, sha, value } = await privateRankings();
+          const next = change(value);
+          if (next === value) return value;
+          const content = JSON.stringify(next);
+          if (Buffer.byteLength(content) > 700000) throw Error("Ranking storage is full.");
+          try {
+            await api("PUT", repo + "/contents/game-rankings.json", {
+              message: "Update private game rankings", ...(sha ? { sha } : {}),
+              content: Buffer.from(content).toString("base64"),
+            });
+            return next;
+          } catch (error) {
+            if (![409, 422].includes(error.status) || attempt === 3) throw error;
+          }
+        }
+      },
+    },
     studentAccounts: env.STUDENT_FILES_REPO && {
       async read() { return (await privateAccounts()).accounts; },
       async update(change) {
@@ -200,6 +224,14 @@ export function githubStore(env) {
     const repo = await privateRepository();
     const file = await api("GET", repo + "/contents/student-files.json", undefined, false, true);
     return { repo, sha: file?.sha, items: file ? JSON.parse(Buffer.from(file.content, "base64").toString("utf8")) : [] };
+  }
+  async function privateRankings() {
+    const repo = await privateRepository();
+    const file = await api("GET", repo + "/contents/game-rankings.json", undefined, false, true);
+    return {
+      repo, sha: file?.sha,
+      value: file ? JSON.parse(Buffer.from(file.content, "base64").toString("utf8")) : { visitors: {}, profiles: {}, results: {} },
+    };
   }
   async function privateAccounts() {
     const repo = await privateRepository();

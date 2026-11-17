@@ -1,5 +1,6 @@
 import type { Plugin } from "vite";
 import { createCommunity } from "../server/community.mjs";
+import { localRankings } from "../server/rankingStore.mjs";
 import { localStudentAccounts } from "../server/studentAccounts.mjs";
 import { fileStore } from "../server/store.mjs";
 import { localLevelsKey } from "../server/levelsKey.mjs";
@@ -14,6 +15,7 @@ export function community(): Plugin {
         store: fileStore(server.config.root),
         accounts: studentAccounts.read,
         studentAccounts,
+        rankings: localRankings(server.config.root),
         studentFiles: localStudentFiles(server.config.root),
         levelsKey: () => localLevelsKey(server.config.root),
         allowedOrigin: (origin, req) => {

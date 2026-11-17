@@ -78,7 +78,7 @@ const Wordmark = styled.div`
   gap: .9rem;
   color: #5c283c;
   min-width: 0;
-  > span:first-child {
+  > a:first-child {
     display: grid;
     place-items: center;
     flex: none;
@@ -103,6 +103,7 @@ function route(): Page {
 }
 export default function App() {
   const [page, setPage] = useState<Page>(route);
+  const [gamesVisited, setGamesVisited] = useState(page === "games");
   const [adminVisited, setAdminVisited] = useState(page === "admin");
   const [data, setData] = useState<Manifest>();
   const [error, setError] = useState("");
@@ -133,6 +134,7 @@ export default function App() {
     reload();
     const change = () => {
       const next = route();
+      if (next === "games") setGamesVisited(true);
       if (next === "admin") setAdminVisited(true);
       else loadPublic().then(setData).catch(() => {});
       setPage(next);
@@ -183,7 +185,7 @@ export default function App() {
       <S.Shell>
           <S.Header>
             <Wordmark>
-              <span aria-hidden="true">N</span>
+              <a href="#/" aria-label="Go to Home" title="Home">N</a>
               <span>
                 <strong>{data?.blogName || "English with Natalia Bellos"}</strong>
                 <small>{copy.headerCaption}</small>
@@ -239,7 +241,8 @@ export default function App() {
             {(adminVisited || page === "admin") && data && (
               <div hidden={page !== "admin"}><Admin publicData={data} /></div>
             )}
-            {page === "admin" && data ? null : error ? (
+            {data && (gamesVisited || page === "games") && <div hidden={page !== "games"}><Games studentSession={studentAccount?.session} /></div>}
+            {(page === "admin" || page === "games") && data ? null : error ? (
               <S.Notice $error role="alert">
                 {error} <S.Button onClick={reload}>Try again</S.Button>
               </S.Notice>
@@ -278,8 +281,6 @@ export default function App() {
                   </S.Notice>
                 )}
               </S.Panel>
-            ) : page === "games" ? (
-              <Games />
             ) : page === "home" ? (
               <BlogHome data={data} />
             ) : page === "student" && !student ? (

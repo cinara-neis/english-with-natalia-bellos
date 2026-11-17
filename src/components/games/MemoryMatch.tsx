@@ -12,7 +12,7 @@ const Setup = styled.div`
   > div { flex: 1 1 12rem; }
 `;
 
-const Cards = styled.div`
+export const MemoryCards = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: clamp(.35rem, 1.5vw, .75rem);
@@ -21,7 +21,7 @@ const Cards = styled.div`
   @media (min-width: 52rem) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 `;
 
-const Card = styled.button<{ $open: boolean; $matched: boolean }>`
+export const MemoryTile = styled.button<{ $open: boolean; $matched: boolean }>`
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -117,11 +117,11 @@ export default function MemoryMatch() {
       </div>
     </Setup>
     <p style={{ marginTop: "1rem" }}>{matched.length} of {size / 2} pairs found · {moves} {moves === 1 ? "turn" : "turns"}</p>
-    <Cards aria-label={`${memoryCategories[category].label} memory cards`}>
+    <MemoryCards aria-label={`${memoryCategories[category].label} memory cards`}>
       {cards.map((card, index) => {
         const isMatched = matched.includes(card.word);
         const open = isMatched || flipped.includes(card.id);
-        return <Card type="button" key={card.id} $open={open} $matched={isMatched}
+        return <MemoryTile type="button" key={card.id} $open={open} $matched={isMatched}
           aria-disabled={isMatched || waiting || won}
           aria-label={open ? `${isMatched ? "Matched: " : ""}${card.side === "word" ? "Word" : "Picture"}: ${card.word}` : `Turn card ${index + 1}`}
           onClick={() => turn(card.id)}>
@@ -130,9 +130,9 @@ export default function MemoryMatch() {
               card.colour ? <span className="swatch" aria-hidden="true" style={{ background: card.colour }} /> :
                 <span className="picture" aria-hidden="true">{card.picture}</span>}
           {isMatched && <small aria-hidden="true">Matched</small>}
-        </Card>;
+        </MemoryTile>;
       })}
-    </Cards>
+    </MemoryCards>
     <Feedback role="status">{message}</Feedback>
     <Actions><S.Button type="button" $secondary onClick={() => restart()}>Shuffle & restart</S.Button></Actions>
   </GamePanel>;

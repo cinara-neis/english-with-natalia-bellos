@@ -1,15 +1,17 @@
-import { useId, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import styled from "styled-components";
 import { teacherStickers } from "../../shared/teacherStickers";
 import type { Manifest } from "../../shared/content";
 import { base } from "../lib";
 import StickerArt from "./StickerArt";
+import { btsPhotos } from "../../shared/btsMedia";
+import { BtsPhotoViewer, BtsPlaylist } from "./BtsMedia";
 
 const Portrait = styled.div`
   position: relative;
   width: 130px;
   margin-inline: auto;
-  img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 50%; }
+  > img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 50%; }
   @media (max-width: 62rem) { width: 64px; grid-row: 1 / 3; margin-inline: 0; }
 `;
 const Sticker = styled.button`
@@ -61,17 +63,34 @@ const StickerNote = styled.div`
 `;
 
 export default function TeacherPortrait({ photo, stickers = [] }: { photo?: Manifest["teacherPhoto"]; stickers?: Manifest["teacherStickers"] }) {
+  const [media, setMedia] = useState<"music" | keyof typeof btsPhotos>();
+  const closeMedia = useCallback(() => setMedia(undefined), []);
   const [active, setActive] = useState<NonNullable<Manifest["teacherStickers"]>[number]>();
   const noteId = useId();
   const visible = active && stickers.includes(active) ? teacherStickers[active] : null;
   return <Portrait onKeyDown={event => { if (event.key === "Escape") setActive(undefined); }}>
     <img src={photo?.src || `${base}teacher.svg`} alt={photo?.alt || "Illustration of a smiling teacher holding a book"} />
     <StickerGroup>
-      {stickers.map((id, index) => <Sticker key={id} type="button" data-slot={index} aria-label={teacherStickers[id].label}
-        aria-expanded={id === active} aria-controls={noteId} onClick={() => setActive(current => current === id ? undefined : id)}>
-        <StickerArt key={id === active ? "open" : "closed"} id={id} animate />
-      </Sticker>)}
+      {stickers.map((id, index) => {
+        const sticker = teacherStickers[id];
+        const hasPhoto = "photo" in sticker;
+        const opensWindow = id === "music" || hasPhoto;
+        return <Sticker key={id} type="button" data-slot={index} aria-label={sticker.label}
+          aria-haspopup={opensWindow ? "dialog" : undefined}
+          aria-expanded={opensWindow ? media === (hasPhoto ? sticker.photo : "music") : id === active}
+          aria-controls={opensWindow ? undefined : noteId}
+          onClick={() => {
+            if (opensWindow) {
+              setActive(undefined);
+              setMedia(hasPhoto ? sticker.photo : "music");
+            } else setActive(current => current === id ? undefined : id);
+          }}>
+          <StickerArt key={id === active ? "open" : "closed"} id={id} animate />
+        </Sticker>;
+      })}
     </StickerGroup>
     <StickerNote id={noteId} role="status" hidden={!visible}>{visible?.note}</StickerNote>
+    {media === "music" && <BtsPlaylist onClose={closeMedia} />}
+    {media && media !== "music" && <BtsPhotoViewer photo={btsPhotos[media]} onClose={closeMedia} />}
   </Portrait>;
 }

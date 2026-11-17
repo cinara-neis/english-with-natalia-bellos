@@ -10,6 +10,7 @@ export function createCommunity(options: {
   levelsKey?: () => Promise<string | undefined>;
   studentFiles?: unknown;
   studentAccounts?: unknown;
+  rankings?: import("./rankingStore.mjs").RankingStore;
   teacherAccess?: (req: IncomingMessage) => Promise<boolean>;
   allowedOrigin: (origin: string | undefined, req: IncomingMessage) => boolean;
 }): {

@@ -378,3 +378,19 @@ A professora usa **Teacher login** no blog. O GitHub App instalado somente no re
 4. Teste o **Teacher login** online com a professora. Para redefinir, gere outra senha e substitua o hash no Worker. A alteração invalida as sessões antigas. A professora pode guardar a senha num gerenciador de senhas para evitar digitá-la sempre.
 
 Não use uma senha escolhida manualmente com este modo: o formato e o armazenamento foram projetados para a senha de alta entropia produzida pelo gerador.
+
+## Rankings dos jogos
+
+Em **Games → Leaderboard**, alunos e visitantes participam de classificações separadas usando apelidos públicos. Alunos usam o login existente e escolhem entrar no ranking. Visitantes criam um usuário e senha exclusivos para jogos. A professora continua controlando os convites dos alunos.
+
+Cada rodada concluída no modo ranqueado soma uma vitória. Os jogos livres continuam disponíveis para treino. O servidor cria a rodada, recebe cada jogada e calcula o resultado. A memória tem classificações próprias por categoria e quantidade de cartas. O desempate usa o menor número de tentativas ou erros e, depois, o tempo dessa melhor partida. Jogadas repetidas e requisições concorrentes têm controle de versão para evitar vitórias duplicadas.
+
+Para desenvolvimento, **npm run dev** usa o serviço local e salva os dados em **.student-auth/game-rankings.json**, fora do conteúdo público e ignorado pelo Git. Os apelidos e as vitórias sobrevivem ao reinício do serviço. As sessões e partidas em andamento duram até uma hora e terminam quando o processo reinicia.
+
+Para publicar, atualize também o **serviço Node de comunidade**, iniciado por **npm run community:start**. O frontend precisa de **VITE_COMMUNITY_URL** e o serviço precisa das configurações GitHub já usadas pelos arquivos e contas privadas, incluindo **STUDENT_FILES_REPO**. A GitHub App deve ter acesso a esse repositório privado com permissão de leitura e escrita em Contents. Os dados ficam em **game-rankings.json** nesse repositório. O serviço confirma que o repositório é privado e usa a versão do arquivo para repetir com segurança uma gravação que conflitou com outra.
+
+Publicar apenas o frontend no GitHub Pages ou atualizar o Worker do painel da professora não ativa o ranking. O serviço Node precisa estar online. A interface mostra indisponibilidade se o serviço ou o armazenamento ainda não estiverem configurados.
+
+As senhas dos visitantes são armazenadas com salt e scrypt. A API pública retorna apenas apelidos e resultados. Um login de visitante não abre os recursos dos alunos. A participação pode ser ocultada em **Hide my ranking**, mantendo os resultados para quando a pessoa optar por voltar. O cadastro de jogadores visitantes usa nome de usuário e senha e ainda não inclui recuperação de senha.
+
+O armazenamento em arquivos no GitHub é voltado a uma turma pequena. Cada cadastro, alteração de participação ou vitória grava uma nova versão no repositório privado e consome a cota da API. Partidas incompletas ficam na memória do serviço. Os dados privados, os hashes e as chaves não devem ser enviados ao repositório público ou colocados em variáveis VITE.

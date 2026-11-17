@@ -18,6 +18,7 @@ const store = githubStore(process.env);
 const hub = createCommunity({
   store,
   studentFiles: store.studentFiles,
+  rankings: store.rankings,
   teacherAccess: async (req) => {
     const endpoint = process.env.TEACHER_ADMIN_API;
     const authorization = req.headers.authorization;

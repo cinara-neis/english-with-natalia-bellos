@@ -9,4 +9,4 @@ export function fileStore(root: string): {
 };
 export function githubStore(
   env: Record<string, string | undefined>,
-): ReturnType<typeof fileStore>;
+): ReturnType<typeof fileStore> & { rankings?: import("./rankingStore.mjs").RankingStore };

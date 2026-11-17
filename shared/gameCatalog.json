@@ -1,0 +1,422 @@
+{
+  "vocabulary": [
+    {
+      "word": "TEA",
+      "clue": "A warm drink made by putting leaves in hot water.",
+      "example": "Would you like a cup of tea?"
+    },
+    {
+      "word": "CAT",
+      "clue": "A small animal that purrs and says meow.",
+      "example": "The cat is sleeping on the books."
+    },
+    {
+      "word": "PAINT",
+      "clue": "To make a picture using colours and a brush.",
+      "example": "I like to paint flowers."
+    },
+    {
+      "word": "HISTORY",
+      "clue": "The study of what happened in the past.",
+      "example": "History helps us understand the present."
+    },
+    {
+      "word": "MUSIC",
+      "clue": "Sounds arranged into songs or melodies.",
+      "example": "We practise English by listening to music."
+    },
+    {
+      "word": "BOOK",
+      "clue": "An object with pages that you read.",
+      "example": "This book tells a wonderful story."
+    },
+    {
+      "word": "PURPLE",
+      "clue": "A colour made by mixing red and blue.",
+      "example": "She wears a purple scarf."
+    },
+    {
+      "word": "MUSEUM",
+      "clue": "A place where you can see art and historical objects.",
+      "example": "We visited the museum yesterday."
+    },
+    {
+      "word": "GARDEN",
+      "clue": "A place where people grow flowers and plants.",
+      "example": "The cat is exploring the garden."
+    },
+    {
+      "word": "STORY",
+      "clue": "An account of real or imagined events.",
+      "example": "Tell me your favourite story."
+    }
+  ],
+  "catPuzzles": [
+    {
+      "regions": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        1,
+        4,
+        2,
+        2,
+        3
+      ],
+      "solution": [
+        3,
+        5,
+        12,
+        19,
+        21
+      ]
+    },
+    {
+      "regions": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        0,
+        2,
+        1,
+        1,
+        3,
+        3,
+        2,
+        1,
+        1,
+        3,
+        4,
+        4,
+        4,
+        1,
+        3,
+        3,
+        4,
+        4,
+        1
+      ],
+      "solution": [
+        1,
+        9,
+        12,
+        15,
+        23
+      ]
+    },
+    {
+      "regions": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        2,
+        3,
+        3,
+        3,
+        4,
+        2
+      ],
+      "solution": [
+        2,
+        5,
+        14,
+        16,
+        23
+      ]
+    }
+  ],
+  "crosswords": [
+    {
+      "across": "CAT",
+      "down": "TEA",
+      "bottom": "ART",
+      "clues": [
+        "An animal that says meow.",
+        "A drink made with leaves and hot water.",
+        "Paintings, drawings and sculpture."
+      ]
+    },
+    {
+      "across": "SUN",
+      "down": "NAP",
+      "bottom": "PEN",
+      "clues": [
+        "The star that gives Earth light.",
+        "A short sleep, often enjoyed by cats.",
+        "You write with this using ink."
+      ]
+    },
+    {
+      "across": "PEN",
+      "down": "NUT",
+      "bottom": "TEA",
+      "clues": [
+        "An object for writing in ink.",
+        "An almond or a walnut, for example.",
+        "A warm drink made with leaves."
+      ]
+    }
+  ],
+  "memoryCategories": {
+    "animals": {
+      "label": "Animals",
+      "items": [
+        {
+          "word": "cat",
+          "picture": "🐈"
+        },
+        {
+          "word": "dog",
+          "picture": "🐕"
+        },
+        {
+          "word": "bird",
+          "picture": "🐦"
+        },
+        {
+          "word": "fish",
+          "picture": "🐟"
+        },
+        {
+          "word": "rabbit",
+          "picture": "🐇"
+        },
+        {
+          "word": "turtle",
+          "picture": "🐢"
+        },
+        {
+          "word": "elephant",
+          "picture": "🐘"
+        },
+        {
+          "word": "giraffe",
+          "picture": "🦒"
+        },
+        {
+          "word": "lion",
+          "picture": "🦁"
+        },
+        {
+          "word": "butterfly",
+          "picture": "🦋"
+        },
+        {
+          "word": "horse",
+          "picture": "🐎"
+        },
+        {
+          "word": "penguin",
+          "picture": "🐧"
+        }
+      ]
+    },
+    "professions": {
+      "label": "Professions",
+      "items": [
+        {
+          "word": "doctor",
+          "picture": "🧑‍⚕️"
+        },
+        {
+          "word": "teacher",
+          "picture": "🧑‍🏫"
+        },
+        {
+          "word": "chef",
+          "picture": "🧑‍🍳"
+        },
+        {
+          "word": "farmer",
+          "picture": "🧑‍🌾"
+        },
+        {
+          "word": "artist",
+          "picture": "🧑‍🎨"
+        },
+        {
+          "word": "firefighter",
+          "picture": "🧑‍🚒"
+        },
+        {
+          "word": "pilot",
+          "picture": "🧑‍✈️"
+        },
+        {
+          "word": "astronaut",
+          "picture": "🧑‍🚀"
+        },
+        {
+          "word": "mechanic",
+          "picture": "🧑‍🔧"
+        },
+        {
+          "word": "scientist",
+          "picture": "🧑‍🔬"
+        },
+        {
+          "word": "singer",
+          "picture": "🧑‍🎤"
+        },
+        {
+          "word": "police officer",
+          "picture": "👮"
+        }
+      ]
+    },
+    "fruits": {
+      "label": "Fruits",
+      "items": [
+        {
+          "word": "apple",
+          "picture": "🍎"
+        },
+        {
+          "word": "banana",
+          "picture": "🍌"
+        },
+        {
+          "word": "grapes",
+          "picture": "🍇"
+        },
+        {
+          "word": "strawberry",
+          "picture": "🍓"
+        },
+        {
+          "word": "orange",
+          "picture": "🍊"
+        },
+        {
+          "word": "pineapple",
+          "picture": "🍍"
+        },
+        {
+          "word": "watermelon",
+          "picture": "🍉"
+        },
+        {
+          "word": "pear",
+          "picture": "🍐"
+        },
+        {
+          "word": "cherries",
+          "picture": "🍒"
+        },
+        {
+          "word": "lemon",
+          "picture": "🍋"
+        },
+        {
+          "word": "peach",
+          "picture": "🍑"
+        },
+        {
+          "word": "kiwi",
+          "picture": "🥝"
+        }
+      ]
+    },
+    "colours": {
+      "label": "Colours",
+      "items": [
+        {
+          "word": "red",
+          "picture": "",
+          "colour": "#e23636"
+        },
+        {
+          "word": "blue",
+          "picture": "",
+          "colour": "#2673df"
+        },
+        {
+          "word": "yellow",
+          "picture": "",
+          "colour": "#ffdf36"
+        },
+        {
+          "word": "green",
+          "picture": "",
+          "colour": "#248e4e"
+        },
+        {
+          "word": "orange",
+          "picture": "",
+          "colour": "#f58d26"
+        },
+        {
+          "word": "purple",
+          "picture": "",
+          "colour": "#7941ad"
+        },
+        {
+          "word": "pink",
+          "picture": "",
+          "colour": "#f29abc"
+        },
+        {
+          "word": "brown",
+          "picture": "",
+          "colour": "#87522e"
+        },
+        {
+          "word": "black",
+          "picture": "",
+          "colour": "#202020"
+        },
+        {
+          "word": "white",
+          "picture": "",
+          "colour": "#ffffff"
+        },
+        {
+          "word": "grey",
+          "picture": "",
+          "colour": "#999999"
+        },
+        {
+          "word": "turquoise",
+          "picture": "",
+          "colour": "#36c8c2"
+        }
+      ]
+    }
+  }
+}

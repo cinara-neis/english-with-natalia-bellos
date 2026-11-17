@@ -5,7 +5,7 @@ import * as S from "../../styles";
 import { catPuzzles } from "./puzzles";
 import { Actions, Feedback, GamePanel } from "./styles";
 
-const territories = [
+export const territories = [
   { name: "Rose", colour: "#efd1d8" },
   { name: "Mint", colour: "#d3e5d9" },
   { name: "Lilac", colour: "#e1d4ed" },
@@ -13,7 +13,7 @@ const territories = [
   { name: "Sky", colour: "#cfdfef" },
 ];
 
-const CatBoard = styled.div`
+export const CatBoard = styled.div`
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   max-width: 24rem;

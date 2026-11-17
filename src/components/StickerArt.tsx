@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { btsPhotos } from "../../shared/btsMedia";
+import { base } from "../lib";
 import styled, { keyframes } from "styled-components";
 import { teacherStickers, type TeacherSticker } from "../../shared/teacherStickers";
 
@@ -16,6 +19,7 @@ const Art = styled.span`
   height: 2.25rem;
   color: #653b94;
   line-height: 1;
+  img { width: 100%; height: 100%; border-radius: .4rem; object-fit: cover; }
   .icon { font-size: 1.2rem; }
   .accent { position: absolute; top: .05rem; right: .05rem; font-size: .65rem; }
   @media (prefers-reduced-motion: no-preference) {
@@ -62,9 +66,14 @@ const Lineup = styled.span`
 
 export default function StickerArt({ id, animate = false }: { id: TeacherSticker; animate?: boolean }) {
   const sticker = teacherStickers[id];
+  const [failed, setFailed] = useState(false);
+  const photo = "photo" in sticker ? btsPhotos[sticker.photo] : undefined;
   return (
     <Art aria-hidden="true" className={animate ? "animated" : undefined}>
-      {id === "group" ? (
+      {photo && !failed ? (
+        <img src={photo.src.startsWith("https:") ? photo.src : base + photo.src} alt="" loading="lazy"
+          referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      ) : id === "group" ? (
         <Lineup>{Array.from({ length: 7 }, (_, index) => <span key={index} />)}</Lineup>
       ) : <span className="icon">{sticker.icon}</span>}
       {"accent" in sticker && <span className="accent">{sticker.accent}</span>}
