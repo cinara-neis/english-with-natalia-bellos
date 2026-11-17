@@ -49,6 +49,11 @@ export default function PageContentEditor({ draft, section, onChange, onBusyChan
           onChange={e => onChange({ ...draft, pageContent: { ...draft.pageContent, [key]: e.target.value } })} />
       </div>)}
     </details>)}
+    <details>
+      <summary style={{ cursor: "pointer", paddingBlock: ".5rem" }}>Preview homepage text draft</summary>
+      <h3 style={{ whiteSpace: "pre-line" }}>{copy.homeTitle}</h3>
+      <p>{copy.homeIntro}</p>
+    </details>
   </S.Panel>;
 
   return <PortraitSettings>

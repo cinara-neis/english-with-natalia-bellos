@@ -10,13 +10,12 @@ import manifest from "../public/content/manifest.json";
 afterEach(cleanup);
 it("previews the selected teacher sticker and opens its note by keyboard", async () => {
   const user = userEvent.setup();
-  let latest: Manifest = structuredClone(manifest);
+  let latest: Manifest = { ...structuredClone(manifest), teacherStickers: [] };
   function Editor() {
     const [draft, setDraft] = useState(latest);
-    return <PageContentEditor draft={draft} onChange={next => { latest = next; setDraft(next); }} />;
+    return <PageContentEditor section="portrait" onBusyChange={() => {}} draft={draft} onChange={next => { latest = next; setDraft(next); }} />;
   }
   render(<Editor />);
-  await user.click(screen.getByText("Teacher profile image"));
   await user.click(screen.getByRole("button", { name: "BTS-inspired purple heart", pressed: false }));
   expect(latest.teacherStickers).toEqual(["purple"]);
   const preview = screen.getByRole("button", { name: "BTS-inspired purple heart", expanded: false });
@@ -31,10 +30,10 @@ it("edits homepage text as a draft with a preview, without changing contacts or 
   let latest: Manifest = structuredClone(manifest);
   function Editor() {
     const [draft, setDraft] = useState(latest);
-    return <PageContentEditor draft={draft} onChange={next => { latest = next; setDraft(next); }} />;
+    return <PageContentEditor section="pages" onBusyChange={() => {}} draft={draft} onChange={next => { latest = next; setDraft(next); }} />;
   }
   render(<Editor />);
-  await user.click(screen.getByText("Home texts"));
+  await user.click(screen.getByText("Home"));
   const headline = screen.getByLabelText("Main headline");
   await user.clear(headline); await user.type(headline, "Welcome to your English journey");
   expect(latest.pageContent?.homeTitle).toBe("Welcome to your English journey");

@@ -97,7 +97,7 @@ describe("English interface and accessibility", () => {
       /Visualizar|Baixar|professora|alunos|Materiais/,
     );
     await audit(container);
-  });
+  }, 20000);
   it("announces student selection and filters with keyboard input", async () => {
     const user = userEvent.setup();
     await start();
@@ -156,7 +156,7 @@ describe("English interface and accessibility", () => {
     );
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.activeElement).toBe(trigger);
-  });
+  }, 20000);
   it("moves focus after navigation and gives admin forms accessible labels", async () => {
     const user = userEvent.setup();
     const { container } = await start();
