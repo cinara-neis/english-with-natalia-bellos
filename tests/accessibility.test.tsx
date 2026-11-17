@@ -57,7 +57,7 @@ afterEach(() => {
 });
 async function start() {
   const result = render(<App />);
-  await screen.findByRole("heading", { name: /A curious mind/ });
+  await screen.findByRole("heading", { name: /Your English/ });
   return result;
 }
 async function audit(container: HTMLElement) {
@@ -88,6 +88,8 @@ describe("English interface and accessibility", () => {
     );
     await user.keyboard("{Enter}");
     expect(document.activeElement).toBe(screen.getByRole("main"));
+    await user.click(screen.getByRole("button", { name: "Practise the word Tea" }));
+    expect(screen.getByText(/Practise offering a drink/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Preview A little about me" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Videos" }));
     expect(screen.queryByRole("heading", { name: "Greetings" })).toBeNull();
@@ -115,7 +117,7 @@ describe("English interface and accessibility", () => {
     student.focus();
     await user.keyboard("{Enter}");
     expect(await screen.findByRole("heading", { name: "Ana Beatriz’s learning progress" })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Notes from Natalia" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "English with your teacher" })).toBeNull();
     expect(screen.getByText("2 materials found for Ana Beatriz.")).toBeTruthy();
     await user.type(
       screen.getByRole("textbox", { name: "Search materials" }),
@@ -207,7 +209,7 @@ describe("English interface and accessibility", () => {
     await user.click(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: false }));
     expect(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: true })).toBeTruthy();
     await user.click(screen.getByRole("link", { name: "Home" }));
-    await screen.findByRole("heading", { name: /A curious mind/ });
+    await screen.findByRole("heading", { name: /Your English/ });
     expect(screen.queryByRole("button", { name: "BTS-inspired seven-member group" })).toBeNull();
 
     await user.click(screen.getByRole("link", { name: "Teacher login" }));

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUpRight, Search, Coffee, Palette, Landmark, Music2, Cat } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Search, Coffee, BookOpen, Music2, Cat } from "lucide-react";
 import styled from "styled-components";
 import { base } from "../lib";
 import type { Manifest } from "../../shared/content";
@@ -64,7 +64,7 @@ const Kicker = styled.p`
   &::before { content: ""; width: 2rem; height: 1px; background: currentColor; }
 `;
 
-const Interests = styled.div`
+const CourseLinks = styled.nav`
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -72,10 +72,47 @@ const Interests = styled.div`
   padding: 1.1rem .5rem;
   border-block: 1px solid #d9cfc2;
   margin-bottom: clamp(2rem, 5vw, 4rem);
-  color: #61564e;
-  span { display: inline-flex; align-items: center; gap: .6rem; font-size: .75rem; }
-  span:nth-child(4) { color: #76538b; }
+  a { display: inline-flex; align-items: center; gap: .6rem; font-size: .85rem; min-height: 44px; }
 `;
+
+const IllustrationButtons = styled.div`
+  position: absolute;
+  inset: 0 0 2rem;
+  pointer-events: none;
+  button {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    pointer-events: auto;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    border: 2px solid #fffdf8;
+    background: #663047;
+    color: #fffdf8;
+    box-shadow: 0 2px 9px #0003;
+  }
+  button[aria-pressed="true"] { background: #365542; }
+`;
+
+const Practice = styled.div`
+  grid-column: 1 / -1;
+  border-left: 3px solid #75425d;
+  padding: 1rem 1.25rem;
+  background: #eee6ec;
+  margin-top: -1.5rem;
+  p { margin: .4rem 0 0; font-size: .9rem; }
+`;
+
+const pictureWords = [
+  { word: "Cat", icon: Cat, left: "27%", top: "49%", prompt: "The cat is sleeping on the books. What is your pet doing? Try a sentence with “is” and a verb ending in “-ing”." },
+  { word: "Tea", icon: Coffee, left: "69%", top: "57%", prompt: "Would you like a cup of tea? Practise offering a drink: “Would you like…?”" },
+  { word: "Book", icon: BookOpen, left: "43%", top: "80%", prompt: "I read a book yesterday. What did you read yesterday? Try an answer in the past tense." },
+  { word: "Music", icon: Music2, left: "84%", top: "39%", prompt: "I like listening to music. What do you like listening to? Tell your teacher about a favourite song in English." },
+];
 
 const Editorial = styled.div`
   display: grid;
@@ -132,6 +169,7 @@ const Entry = styled.article`
 const longDate = new Intl.DateTimeFormat("en", { dateStyle: "long", timeZone: "UTC" });
 
 export default function BlogHome({ data }: { data: Manifest }) {
+  const [pictureWord, setPictureWord] = useState<number>();
   const [query, setQuery] = useState("");
   const [videosOnly, setVideosOnly] = useState(false);
   const copy = pageContent(data.pageContent);
@@ -157,16 +195,29 @@ export default function BlogHome({ data }: { data: Manifest }) {
       </div>
       <Cover>
         <img src={`${base}images/natalia-studio.png`} alt="A sleeping cat beside art books, a sketchbook, purple flowers and a cup of tea." width={800} height={800} fetchPriority="high" />
-        <figcaption>A little curiosity. A cup of tea. A world to discover.</figcaption>
+        <IllustrationButtons aria-label="Practise English with the picture">
+          {pictureWords.map(({ word, icon: Icon, left, top }, index) => (
+            <button type="button" key={word} style={{ left, top }} aria-label={`Practise the word ${word}`}
+              aria-pressed={pictureWord === index} aria-controls="picture-practice"
+              onClick={() => setPictureWord(current => current === index ? undefined : index)}>
+              <Icon size={18} aria-hidden="true" />
+            </button>
+          ))}
+        </IllustrationButtons>
+        <figcaption>Choose an object. Practise a little English.</figcaption>
       </Cover>
+      {pictureWord !== undefined && (
+        <Practice id="picture-practice" role="status">
+          <strong>{pictureWords[pictureWord].word}</strong>
+          <p>{pictureWords[pictureWord].prompt}</p>
+        </Practice>
+      )}
     </Masthead>
-    <Interests aria-label="Inside Natalia’s journal">
-      <span><Palette size={16} aria-hidden="true" /> Art & creativity</span>
-      <span><Landmark size={16} aria-hidden="true" /> Stories & history</span>
-      <span><Coffee size={16} aria-hidden="true" /> Tea & conversation</span>
-      <span><Music2 size={16} aria-hidden="true" /> A little BTS</span>
-      <span><Cat size={16} aria-hidden="true" /> Feline company</span>
-    </Interests>
+    <CourseLinks aria-label="Course shortcuts">
+      <a href="#/materials">Class materials <ArrowUpRight size={16} aria-hidden="true" /></a>
+      <a href="#/games">Practise with games <ArrowUpRight size={16} aria-hidden="true" /></a>
+      <a href="#/contact">Ask about English lessons <ArrowUpRight size={16} aria-hidden="true" /></a>
+    </CourseLinks>
     <Editorial>
     <Journal aria-labelledby="teacher-journal-heading">
       <h2 id="teacher-journal-heading" tabIndex={-1}>{copy.journalTitle}</h2>
@@ -195,7 +246,11 @@ export default function BlogHome({ data }: { data: Manifest }) {
       <Author aria-labelledby="meet-natalia">
         <TeacherPortrait photo={data.teacherPhoto} stickers={data.teacherStickers} />
         <h2 id="meet-natalia">{data.teacher}</h2>
-        <p>English and history teacher, art lover, tea enthusiast. Always curious about the stories that connect us.</p>
+        <p>Your English teacher. Follow the class notes here and find your own materials in the Students menu.</p>
+        <details>
+          <summary>A little about your teacher</summary>
+          <p>She also teaches history and loves art, BTS, cats and a good cup of tea.</p>
+        </details>
         <a href="#/about">Meet your teacher <ArrowUpRight size={15} aria-hidden="true" /></a>
       </Author>
     </Editorial>

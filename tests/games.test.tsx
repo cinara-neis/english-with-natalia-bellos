@@ -3,7 +3,7 @@ import { afterEach, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Games from "../src/components/Games";
-import { crosswordCells, crosswords, sudokuPuzzles, sudokuSolution, validSudoku } from "../src/components/games/puzzles";
+import { crosswordCells, crosswords, catPuzzles, validCatPlacement } from "../src/components/games/puzzles";
 
 afterEach(cleanup);
 
@@ -26,21 +26,31 @@ it("opens Hangman, checks letters, ends a round and preserves it when switching 
   expect(screen.getByRole("status").textContent).toContain("The word was CAT");
 }, 30000);
 
-it("checks Sudoku boxes and keeps given cells read-only", async () => {
+it("marks X without losing lives, charges mistakes and completes the cat puzzle", async () => {
   const user = userEvent.setup();
   render(<Games />);
   await user.click(screen.getByRole("button", { name: /Meow-doku/ }));
-  expect((screen.getByRole("textbox", { name: "Row 1, column 1, given number" }) as HTMLInputElement).readOnly).toBe(true);
-  await user.click(screen.getByRole("button", { name: "Check Meow-doku" }));
-  expect(screen.getByRole("status").textContent).toContain("still empty");
-  const cells = screen.getAllByRole("textbox");
-  for (const [index, cell] of cells.entries()) {
-    if (!(cell as HTMLInputElement).readOnly) await user.type(cell, sudokuSolution[index]);
+  await user.click(screen.getByRole("button", { name: "Row 1, column 1, Mint region, empty" }));
+  expect(screen.getByText("3 hearts remaining")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Row 1, column 1, Mint region, X" })).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Place cat" }));
+  await user.click(screen.getByRole("button", { name: "Row 1, column 1, Mint region, X" }));
+  expect(screen.getByText("2 hearts remaining")).toBeTruthy();
+  for (const index of catPuzzles[0].solution) {
+    const row = Math.floor(index / 5) + 1;
+    const column = index % 5 + 1;
+    await user.click(screen.getByRole("button", { name: new RegExp(`^Row ${row}, column ${column},.*empty$`) }));
   }
-  await user.click(screen.getByRole("button", { name: "Check Meow-doku" }));
-  expect(screen.getByRole("status").textContent).toContain("Purr-fect");
+  expect(screen.getByRole("status").textContent).toContain("Purr-fect!");
   await user.click(screen.getByRole("button", { name: "Next puzzle" }));
-  expect(screen.getAllByRole("textbox").some(cell => !(cell as HTMLInputElement).value)).toBe(true);
+  expect(screen.getByText("3 hearts remaining")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Place cat" }));
+  for (const index of [0, 2, 3]) {
+    await user.click(screen.getByRole("button", { name: new RegExp(`^Row 1, column ${index + 1},.*empty$`) }));
+  }
+  expect(screen.getByRole("status").textContent).toContain("No hearts left");
+  await user.click(screen.getByRole("button", { name: "Restart Meow-doku" }));
+  expect(screen.getByText("3 hearts remaining")).toBeTruthy();
 }, 30000);
 
 it("checks a crossword and starts a new puzzle with new clues", async () => {
@@ -57,17 +67,22 @@ it("checks a crossword and starts a new puzzle with new clues", async () => {
   expect(screen.getByRole("button", { name: /The star that gives Earth light/ })).toBeTruthy();
 }, 30000);
 
-it("ships solvable Sudoku and consistently intersecting crossword puzzles", () => {
-  for (const puzzle of sudokuPuzzles) {
-    expect(puzzle).toHaveLength(16);
-    for (const [index, value] of [...puzzle].entries()) {
-      if (value !== "0") expect(value).toBe(sudokuSolution[index]);
-    }
+it("ships uniquely solvable cat boards and consistently intersecting crosswords", () => {
+  for (const puzzle of catPuzzles) {
+    expect(puzzle.regions).toHaveLength(25);
+    expect(validCatPlacement(puzzle.regions, puzzle.solution)).toBe(true);
+    let solutions = 0;
+    const search = (row: number, cats: number[]) => {
+      if (row === 5) {
+        if (validCatPlacement(puzzle.regions, cats)) solutions++;
+        return;
+      }
+      for (let column = 0; column < 5; column++) search(row + 1, [...cats, row * 5 + column]);
+    };
+    search(0, []);
+    expect(solutions).toBe(1);
   }
-  expect(validSudoku([...sudokuSolution])).toBe(true);
-  expect(validSudoku([..."1111222233334444"])).toBe(false);
-  // Rows and columns can be valid while a 2 by 2 box is wrong.
-  expect(validSudoku([..."1234234134124123"])).toBe(false);
+  expect(validCatPlacement(catPuzzles[0].regions, [0, 6, 12, 18, 24])).toBe(false);
   for (const puzzle of crosswords) {
     expect(puzzle.across[2]).toBe(puzzle.down[0]);
     expect(puzzle.down[2]).toBe(puzzle.bottom[0]);

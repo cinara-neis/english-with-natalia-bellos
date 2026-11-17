@@ -8,7 +8,7 @@ import Crossword from "./games/Crossword";
 
 const games = [
   { id: "hangman", title: "Hangman", description: "Follow the clue and discover the English word.", icon: SpellCheck },
-  { id: "doku", title: "Meow-doku", description: "A cat-sized Sudoku for a little mindful logic.", icon: Cat },
+  { id: "doku", title: "Meow-doku", description: "Find each cat’s home with coloured regions, X marks and three hearts.", icon: Cat },
   { id: "crossword", title: "English crossword", description: "Connect words about art, tea and everyday life.", icon: Grid2X2 },
 ] as const;
 type Game = typeof games[number]["id"];

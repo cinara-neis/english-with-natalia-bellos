@@ -1,103 +1,56 @@
 import { useState } from "react";
 import { Pause, Play } from "lucide-react";
 import styled, { keyframes } from "styled-components";
+import { base } from "../lib";
 
-const stroll = keyframes`
-  from { transform: translateX(-7rem); }
-  to { transform: translateX(calc(100vw + 1rem)); }
+const explore = keyframes`
+  0%, 100% { left: 1%; top: 15%; }
+  24%, 28% { left: calc(99% - 6rem); top: 35%; }
+  49%, 53% { left: 1%; top: 65%; }
+  74%, 78% { left: calc(99% - 6rem); top: calc(100% - 9rem); }
 `;
-const step = keyframes`
-  from { transform: rotate(-18deg); }
-  to { transform: rotate(18deg); }
+const frames = keyframes`
+  from { background-position: 0 0; }
+  to { background-position: 100% 0; }
 `;
-const tail = keyframes`
-  from { transform: rotate(-12deg); }
-  to { transform: rotate(12deg); }
+const face = keyframes`
+  0%, 24% { transform: scaleX(1); }
+  25%, 49% { transform: scaleX(-1); }
+  50%, 74% { transform: scaleX(1); }
+  75%, 100% { transform: scaleX(-1); }
 `;
 
-const Walkway = styled.div<{ $paused: boolean }>`
+const Walkway = styled.div<{ $paused: boolean; $image: string }>`
   position: fixed;
-  bottom: .25rem;
-  left: 0;
-  right: 0;
-  height: 2.8rem;
+  inset: 0;
   z-index: 4;
   pointer-events: none;
   overflow: hidden;
+  .traveller {
+    position: absolute;
+    width: 6rem;
+    aspect-ratio: 3 / 4;
+    left: 1%;
+    top: 15%;
+    animation: ${explore} 72s linear infinite;
+  }
+  .direction {
+    width: 100%;
+    height: 100%;
+    animation: ${face} 72s step-end infinite;
+  }
   .cat {
-    position: absolute;
-    bottom: 0;
-    width: 3.7rem;
-    height: 2.4rem;
-    animation: ${stroll} 36s linear infinite;
+    width: 100%;
+    height: 100%;
+    background-image: url("${p => p.$image}");
+    background-size: 400% 100%;
+    background-repeat: no-repeat;
+    animation: ${frames} .8s steps(3) infinite alternate;
   }
-  .body {
-    position: absolute;
-    left: .65rem;
-    top: .85rem;
-    width: 2.15rem;
-    height: 1.05rem;
-    border-radius: 48% 48% 30% 30%;
-    background: #493d39;
-  }
-  .head {
-    position: absolute;
-    left: 2.45rem;
-    top: .35rem;
-    width: 1.05rem;
-    height: 1.1rem;
-    border-radius: 35% 35% 45% 45%;
-    background: #493d39;
-  }
-  .head::before, .head::after {
-    content: "";
-    position: absolute;
-    top: -.3rem;
-    width: .4rem;
-    height: .5rem;
-    background: #493d39;
-    clip-path: polygon(0 0, 100% 100%, 0 100%);
-  }
-  .head::before { left: .05rem; }
-  .head::after { right: .05rem; transform: scaleX(-1); }
-  .eye {
-    position: absolute;
-    top: .4rem;
-    right: .2rem;
-    width: .14rem;
-    height: .18rem;
-    border-radius: 50%;
-    background: #eed5a0;
-  }
-  .tail {
-    position: absolute;
-    left: .4rem;
-    top: .1rem;
-    width: .35rem;
-    height: 1.4rem;
-    border-radius: 1rem;
-    background: #493d39;
-    transform-origin: bottom;
-    animation: ${tail} 1.2s ease-in-out infinite alternate;
-  }
-  .leg {
-    position: absolute;
-    bottom: -.45rem;
-    width: .3rem;
-    height: .85rem;
-    background: #493d39;
-    border-radius: 0 0 4px 4px;
-    transform-origin: top;
-    animation: ${step} .5s ease-in-out infinite alternate;
-  }
-  .leg:nth-of-type(1) { left: .85rem; }
-  .leg:nth-of-type(2) { left: 1.2rem; animation-delay: -.5s; }
-  .leg:nth-of-type(3) { left: 2.15rem; animation-delay: -.5s; }
-  .leg:nth-of-type(4) { left: 2.5rem; }
-  .cat, .cat * { animation-play-state: ${p => p.$paused ? "paused" : "running"}; }
+  .traveller, .direction, .cat { animation-play-state: ${p => p.$paused ? "paused" : "running"}; }
   @media (prefers-reduced-motion: reduce) {
-    .cat { left: 1rem; transform: none; }
-    .cat, .cat * { animation: none; }
+    .traveller { top: auto; bottom: 0; }
+    .traveller, .direction, .cat { animation: none; }
   }
   @media print { display: none; }
 `;
@@ -122,15 +75,8 @@ const Toggle = styled.button`
 export default function WalkingCat() {
   const [paused, setPaused] = useState(false);
   return <>
-    <Walkway $paused={paused} aria-hidden="true">
-      <div className="cat">
-        <span className="tail" />
-        <div className="body">
-          <span className="leg" /><span className="leg" />
-          <span className="leg" /><span className="leg" />
-        </div>
-        <span className="head"><span className="eye" /></span>
-      </div>
+    <Walkway $paused={paused} $image={`${base}images/walking-cat.png`} aria-hidden="true">
+      <div className="traveller"><div className="direction"><div className="cat" /></div></div>
     </Walkway>
     <Toggle type="button" onClick={() => setPaused(value => !value)}
       aria-label={paused ? "Resume walking cat" : "Pause walking cat"}

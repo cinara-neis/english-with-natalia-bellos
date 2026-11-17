@@ -11,23 +11,30 @@ export const vocabulary = [
   { word: "STORY", clue: "An account of real or imagined events.", example: "Tell me your favourite story." },
 ];
 
-export const sudokuSolution = "1234341221434321";
-export const sudokuPuzzles = [
-  "1004040220030320",
-  "0230301001404001",
-  "1030001221000301",
+export const catPuzzles = [
+  {
+    regions: [1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 2, 0, 0, 1, 1, 2, 2, 3, 1, 4, 2, 2, 3],
+    solution: [3, 5, 12, 19, 21],
+  },
+  {
+    regions: [0, 0, 1, 1, 1, 0, 0, 2, 1, 1, 3, 3, 2, 1, 1, 3, 4, 4, 4, 1, 3, 3, 4, 4, 1],
+    solution: [1, 9, 12, 15, 23],
+  },
+  {
+    regions: [1, 1, 0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 2, 3, 3, 3, 4, 2],
+    solution: [2, 5, 14, 16, 23],
+  },
 ];
 
-export function validSudoku(values: string[]) {
-  if (values.length !== 16 || values.some(value => !/^[1-4]$/.test(value))) return false;
-  const distinct = (indexes: number[]) => new Set(indexes.map(index => values[index])).size === 4;
-  for (let n = 0; n < 4; n++) {
-    if (!distinct([0, 1, 2, 3].map(column => n * 4 + column))) return false;
-    if (!distinct([0, 1, 2, 3].map(row => row * 4 + n))) return false;
-    const start = Math.floor(n / 2) * 8 + (n % 2) * 2;
-    if (!distinct([start, start + 1, start + 4, start + 5])) return false;
-  }
-  return true;
+export function validCatPlacement(regions: number[], cats: number[]) {
+  if (regions.length !== 25 || cats.length !== 5 || new Set(cats).size !== 5 ||
+      cats.some(index => !Number.isInteger(index) || index < 0 || index >= 25)) return false;
+  if (new Set(cats.map(index => Math.floor(index / 5))).size !== 5 ||
+      new Set(cats.map(index => index % 5)).size !== 5 ||
+      new Set(cats.map(index => regions[index])).size !== 5) return false;
+  return cats.every((cell, index) => cats.slice(index + 1).every(other =>
+    Math.abs(Math.floor(cell / 5) - Math.floor(other / 5)) > 1 ||
+    Math.abs(cell % 5 - other % 5) > 1));
 }
 
 export const crosswords = [
