@@ -3,7 +3,7 @@ export const defaultPageContent = {
   sidebarQuote: "Every little step is progress.",
   sidebarCaption: "LET’S GROW TOGETHER ♡",
   headerCaption: "the learning journal",
-  homeEyebrow: "PRIVATE ENGLISH LESSONS",
+  homeEyebrow: "Welcome to our little corner",
   homeBadge: "Learning can feel light",
   homeTitle: "Your English.\nYour next chapter.",
   homeIntro: "Learn English with Natalia Bellos. Find lesson notes, practise with videos and games, and keep building your confidence, one class at a time.",

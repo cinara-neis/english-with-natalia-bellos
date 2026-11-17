@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ArrowUpRight, Cat, Grid2X2, SpellCheck } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Cat, Grid2X2, SpellCheck, Copy } from "lucide-react";
 import styled from "styled-components";
 import * as S from "../styles";
 import Hangman from "./games/Hangman";
 import MeowDoku from "./games/MeowDoku";
 import Crossword from "./games/Crossword";
+import MemoryMatch from "./games/MemoryMatch";
 
 const games = [
+  { id: "memory", title: "Word & picture memory", description: "Match words and pictures. Animals, fruits, colours and professions.", icon: Copy },
   { id: "hangman", title: "Hangman", description: "Follow the clue and discover the English word.", icon: SpellCheck },
   { id: "doku", title: "Meow-doku", description: "Find each cat’s home with coloured regions, X marks and three hearts.", icon: Cat },
   { id: "crossword", title: "English crossword", description: "Connect words about art, tea and everyday life.", icon: Grid2X2 },
@@ -58,6 +60,7 @@ export default function Games() {
         <ArrowLeft size={16} aria-hidden="true" /> All games
       </S.Button>
     )}
+    <div hidden={game !== "memory"}><MemoryMatch /></div>
     <div hidden={game !== "hangman"}><Hangman /></div>
     <div hidden={game !== "doku"}><MeowDoku /></div>
     <div hidden={game !== "crossword"}><Crossword /></div>
