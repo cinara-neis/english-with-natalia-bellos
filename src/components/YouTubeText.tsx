@@ -39,14 +39,27 @@ function VideoCard({ id, number }: { id: string; number: number }) {
   </S.Card>;
 }
 
+function splitLinks(text: string) {
+  return text.split(/(https?:\/\/[^\s<>"']+)/gi);
+}
+
+function withoutTrailingPunctuation(url: string) {
+  return url.replace(/[.,!?;:)\]}]+$/, "");
+}
+
+export function hasYouTubeVideo(text: string) {
+  return splitLinks(text).some((part, index) =>
+    index % 2 === 1 && youtubeVideoId(withoutTrailingPunctuation(part)));
+}
+
 export default function YouTubeText({ text }: { text: string }) {
   const videos = new Set<string>();
-  const parts = text.split(/(https?:\/\/[^\s<>"']+)/gi);
+  const parts = splitLinks(text);
   return <div>
     <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
       {parts.map((part, index) => {
         if (index % 2 === 0) return part;
-        const url = part.replace(/[.,!?;:)\]}]+$/, "");
+        const url = withoutTrailingPunctuation(part);
         const id = youtubeVideoId(url);
         if (!id) return part;
         if (videos.size < 3) videos.add(id);

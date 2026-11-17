@@ -12,7 +12,8 @@ import axe from "axe-core";
 import App from "../src/App";
 import AccessibilityControls from "../src/components/AccessibilityControls";
 import manifest from "../public/content/manifest.json";
-let publicManifest: typeof manifest & { teacherStickers?: string[] };
+import type { Manifest } from "../shared/content";
+let publicManifest: Manifest;
 vi.mock("../src/lib", () => ({
   localEditing: false,
   base: "/",
@@ -30,7 +31,7 @@ vi.mock("../src/lib", () => ({
   },
 }));
 beforeEach(() => {
-  publicManifest = { ...structuredClone(manifest), teacherStickers: [] };
+  publicManifest = { ...(structuredClone(manifest) as Manifest), teacherStickers: [] };
   window.history.replaceState({}, "", "/");
   localStorage.clear();
   document.documentElement.lang = "en";
@@ -74,22 +75,28 @@ async function audit(container: HTMLElement) {
 describe("English interface and accessibility", () => {
   it("has named navigation, a keyboard skip link and named material actions", async () => {
     const user = userEvent.setup();
+    publicManifest.posts = [
+      { id: "greetings", title: "Greetings", body: "Practise your greetings.", date: "2026-11-16" },
+      { id: "video", title: "Listening lesson", body: "https://youtu.be/gdZLi9oWNZg", date: "2026-11-17" },
+    ];
     const { container } = await start();
-    expect(
-      screen.getByRole("navigation", { name: "Main navigation" }),
-    ).toBeTruthy();
-    expect(
-      screen.getByRole("navigation", { name: "OUR STUDENTS" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: /learning progress/i })).toBeNull();
     await user.tab();
     expect(document.activeElement).toBe(
       screen.getByRole("link", { name: "Skip to main content" }),
     );
     await user.keyboard("{Enter}");
     expect(document.activeElement).toBe(screen.getByRole("main"));
-    expect(
-      screen.getByRole("button", { name: "Preview A little about me" }),
-    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Preview A little about me" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Videos" }));
+    expect(screen.queryByRole("heading", { name: "Greetings" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Listening lesson" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Load YouTube video 1" }));
+    expect(screen.getByTitle("YouTube video player 1")).toBeTruthy();
+    await user.click(screen.getByText("Students", { selector: "summary" }));
+    await user.click(screen.getByRole("link", { name: "All materials" }));
+    expect(await screen.findByRole("button", { name: "Preview A little about me" })).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /Download Everyday words/ }),
     ).toBeTruthy();
@@ -101,10 +108,14 @@ describe("English interface and accessibility", () => {
   it("announces student selection and filters with keyboard input", async () => {
     const user = userEvent.setup();
     await start();
-    const student = screen.getByRole("button", { name: "Ana Beatriz" });
+    const menu = screen.getByText("Students", { selector: "summary" });
+    menu.focus();
+    await user.keyboard("{Enter}");
+    const student = screen.getByRole("link", { name: "Ana Beatriz" });
     student.focus();
     await user.keyboard("{Enter}");
-    expect(student.getAttribute("aria-pressed")).toBe("true");
+    expect(await screen.findByRole("heading", { name: "Ana Beatriz’s learning progress" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Teacher’s journal" })).toBeNull();
     expect(screen.getByText("2 materials found for Ana Beatriz.")).toBeTruthy();
     await user.type(
       screen.getByRole("textbox", { name: "Search materials" }),
@@ -140,7 +151,9 @@ describe("English interface and accessibility", () => {
   it("opens a named native modal and returns focus when it is cancelled", async () => {
     const user = userEvent.setup();
     const { container } = await start();
-    const trigger = screen.getByRole("button", {
+    await user.click(screen.getByText("Students", { selector: "summary" }));
+    await user.click(screen.getByRole("link", { name: "All materials" }));
+    const trigger = await screen.findByRole("button", {
       name: "Preview A little about me",
     });
     await user.click(trigger);
@@ -191,19 +204,19 @@ describe("English interface and accessibility", () => {
     expect(screen.getByRole("textbox", { name: "Blog name" })).toBeTruthy();
     expect(screen.queryByRole("combobox", { name: "Student to manage" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Photo and stickers" }));
-    await user.click(screen.getByRole("button", { name: "English books", pressed: false }));
-    expect(screen.getByRole("button", { name: "English books", pressed: true })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: false }));
+    expect(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: true })).toBeTruthy();
     await user.click(screen.getByRole("link", { name: "Home" }));
     await screen.findByRole("heading", { name: /Small steps/ });
-    expect(screen.queryByRole("button", { name: "English books" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "BTS-inspired seven-member group" })).toBeNull();
 
     await user.click(screen.getByRole("link", { name: "Teacher login" }));
-    expect(await screen.findByRole("button", { name: "English books", pressed: true })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "BTS-inspired seven-member group", pressed: true })).toBeTruthy();
     await audit(container);
     await user.click(screen.getByRole("button", { name: "Publish changes" }));
-    await screen.findByText(/Saved to GitHub/);
-    expect(publicManifest.teacherStickers).toContain("books");
+    await screen.findByText(/Changes submitted/);
+    expect(publicManifest.teacherStickers).toContain("group");
     await user.click(screen.getByRole("link", { name: "Home" }));
-    expect(await screen.findByRole("button", { name: "English books" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "BTS-inspired seven-member group" })).toBeTruthy();
   }, 60000);
 });

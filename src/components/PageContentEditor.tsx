@@ -5,13 +5,14 @@ import { profilePhoto } from "../profilePhoto";
 import styled from "styled-components";
 import * as S from "../styles";
 import TeacherPortrait from "./TeacherPortrait";
+import StickerArt from "./StickerArt";
 import { teacherStickers, maxTeacherStickers, type TeacherSticker } from "../../shared/teacherStickers";
 
 const sections: { title: string; fields: [keyof PageContent, string][] }[] = [
-  { title: "Home", fields: [["homeEyebrow", "Welcome label"], ["homeBadge", "Welcome badge"], ["homeTitle", "Main headline"], ["homeIntro", "Welcome text"], ["collectionTitle", "Library title"], ["journalTitle", "Journal title"], ["progressIntro", "Progress introduction"], ["practiceNote", "Practice reminder"]] },
+  { title: "Home", fields: [["homeEyebrow", "Welcome label"], ["homeTitle", "Main headline"], ["homeIntro", "Welcome text"], ["collectionTitle", "Library title"], ["journalTitle", "Journal title"], ["progressIntro", "Progress introduction"], ["practiceNote", "Practice reminder"]] },
   { title: "Student pages", fields: [["studentTitle", "Student welcome headline"], ["studentIntro", "Student welcome text"]] },
   { title: "Contact", fields: [["contactTitle", "Contact headline"], ["contactIntro", "Contact introduction"]] },
-  { title: "Brand and footer", fields: [["tagline", "Blog tagline"], ["headerCaption", "Header caption"], ["sidebarQuote", "Sidebar quote"], ["sidebarCaption", "Sidebar caption"], ["aboutBadge", "About badge"], ["footer", "Footer message"]] },
+  { title: "Brand and footer", fields: [["tagline", "Blog tagline"], ["headerCaption", "Header caption"], ["aboutBadge", "About badge"], ["footer", "Footer message"]] },
 ];
 const PortraitSettings = styled(S.Panel)`
   display: grid;
@@ -28,6 +29,14 @@ const PortraitPreview = styled.div`
   padding: 1rem;
   text-align: center;
   h3 { margin-top: 0; }
+`;
+
+const StickerPicker = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: .5rem;
+  margin-top: .75rem;
+  button { justify-content: flex-start; text-align: left; min-height: 3.25rem; }
 `;
 
 export default function PageContentEditor({ draft, section, onChange, onBusyChange }: {
@@ -58,23 +67,23 @@ export default function PageContentEditor({ draft, section, onChange, onBusyChan
 
   return <PortraitSettings>
     <PortraitPreview>
-      <h3>Public sidebar preview</h3>
+      <h3>Public portrait preview</h3>
       <TeacherPortrait photo={draft.teacherPhoto} stickers={stickers} />
       <p>{draft.blogName}</p>
     </PortraitPreview>
     <div>
       <fieldset>
-        <legend>Profile stickers (up to three)</legend>
-        {Object.entries(teacherStickers).map(([key, sticker]) => {
-          const id = key as TeacherSticker;
-          const selected = stickers.includes(id);
-          return <S.Button key={key} type="button" $secondary={!selected} aria-pressed={selected}
-            disabled={!selected && stickers.length >= maxTeacherStickers}
-            style={{ margin: ".25rem" }}
-            onClick={() => onChange({ ...draft, teacherStickers: selected ? stickers.filter(item => item !== id) : [...stickers, id] })}>
-            <span aria-hidden="true">{sticker.icon}</span> {sticker.label}
-          </S.Button>;
-        })}
+        <legend>Profile stickers ({stickers.length} of {maxTeacherStickers} selected)</legend>
+        <StickerPicker>
+          {(Object.keys(teacherStickers) as TeacherSticker[]).map(id => {
+            const selected = stickers.includes(id);
+            return <S.Button key={id} type="button" $secondary={!selected} aria-pressed={selected}
+              disabled={!selected && stickers.length >= maxTeacherStickers}
+              onClick={() => onChange({ ...draft, teacherStickers: selected ? stickers.filter(item => item !== id) : [...stickers, id] })}>
+              <StickerArt id={id} /> {teacherStickers[id].label}
+            </S.Button>;
+          })}
+        </StickerPicker>
       </fieldset>
       <label htmlFor="teacher-image">Upload your teacher image</label>
       <input id="teacher-image" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="teacher-image-help" onChange={async e => {

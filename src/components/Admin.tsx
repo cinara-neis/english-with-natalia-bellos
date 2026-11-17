@@ -12,7 +12,6 @@ import {
   api,
   asBase64,
   login,
-  repoUrl,
   localEditing,
 } from "../lib";
 import * as S from "../styles";
@@ -113,7 +112,6 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
   const [file, setFile] = useState<File>();
   const [imageDescription, setImageDescription] = useState("");
   const [fileKey, setFileKey] = useState(0);
-  const [commit, setCommit] = useState("");
   const [pendingAnnouncement, setPendingAnnouncement] = useState("");
   const chosen = draft.students.find((s) => s.id === studentId);
   useEffect(() => {
@@ -141,7 +139,6 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
     setDraft(d);
     setDirty(true);
     setMessage("");
-    setCommit("");
   };
   async function task(fn: () => Promise<void>) {
     setBusy(true);
@@ -178,7 +175,7 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
       setMessage(
         localEditing
           ? "Local editor ready. Changes are saved to this project on your computer."
-          : "Connected to GitHub. Your session lasts up to one hour and ends when you reload the page.",
+          : "You’re signed in.",
       );
     });
   }
@@ -264,12 +261,11 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
       setHead(result.head);
       setUploads([]);
       setDirty(false);
-      setCommit(result.commit);
       setPendingAnnouncement("");
       setMessage(
         localEditing
           ? `Saved to this project. Your files are in public/content/uploads and the student list is in public/content/manifest.json.${result.retained ? " Some unreferenced files could not be removed from disk." : ""} This does not publish the blog online.`
-          : "Saved to GitHub. Visitors will see the update after the GitHub Pages deployment succeeds.",
+          : "Changes submitted. They’ll appear on the public site shortly.",
       );
       if (localEditing) window.dispatchEvent(new Event("blog-content-saved"));
     });
@@ -412,11 +408,6 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
             </S.SaveBar>
             {error && <S.Notice $error role="alert">{error}</S.Notice>}
             {message && <S.Notice role="status">{message}</S.Notice>}
-            {commit && repoUrl && !localEditing && (
-              <p><a href={`${repoUrl}/actions`} target="_blank" rel="noreferrer">
-                Track deployment on GitHub Actions (opens in a new tab)
-              </a></p>
-            )}
             <h2 ref={sectionHeading} tabIndex={-1}>{tools.find(tool => tool.id === section)?.label}</h2>
             {section === "documents" && (
               <p>Published materials are public. Removed files can remain in Git history or previous downloads.</p>
@@ -762,7 +753,6 @@ export default function Admin({ publicData }: { publicData: Manifest }) {
                     setUploads([]);
                     setMessage("");
                     setError("");
-                    setCommit("");
                   }}
                 >
                   <LogOut size={16} /> Sign out

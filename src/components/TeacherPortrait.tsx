@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { teacherStickers } from "../../shared/teacherStickers";
 import type { Manifest } from "../../shared/content";
 import { base } from "../lib";
+import StickerArt from "./StickerArt";
 
 const Portrait = styled.div`
   position: relative;
@@ -68,7 +69,7 @@ export default function TeacherPortrait({ photo, stickers = [] }: { photo?: Mani
     <StickerGroup>
       {stickers.map((id, index) => <Sticker key={id} type="button" data-slot={index} aria-label={teacherStickers[id].label}
         aria-expanded={id === active} aria-controls={noteId} onClick={() => setActive(current => current === id ? undefined : id)}>
-        <span aria-hidden="true">{teacherStickers[id].icon}</span>
+        <StickerArt key={id === active ? "open" : "closed"} id={id} animate />
       </Sticker>)}
     </StickerGroup>
     <StickerNote id={noteId} role="status" hidden={!visible}>{visible?.note}</StickerNote>

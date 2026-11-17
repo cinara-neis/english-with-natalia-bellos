@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { Manifest } from "../shared/content";
 import fixture from "../public/content/manifest.json";
 import LearningUpdates from "../src/components/LearningUpdates";
+import BlogHome from "../src/components/BlogHome";
 import TeacherPostEditor from "../src/components/TeacherPostEditor";
 import StudentProgressEditor from "../src/components/StudentProgressEditor";
 afterEach(cleanup);
@@ -26,7 +27,7 @@ describe("Learning progress and teacher journal", () => {
       },
     ];
     const { container } = render(
-      <LearningUpdates data={data} student={data.students[0]} />,
+      <><LearningUpdates student={data.students[0]} intro="Learning goals" /><BlogHome data={data} /></>,
     );
     const progress = screen.getByRole("progressbar", {
       name: "Goal progress: 65%",
@@ -43,7 +44,7 @@ describe("Learning progress and teacher journal", () => {
       id: "video-post", title: "Listening practice", date: "2026-10-21",
       body: "https://www.youtube.com/shorts/M7lc1UVf-VE\nhttps://youtube.com.example.org/watch?v=M7lc1UVf-VE",
     }];
-    const { container } = render(<LearningUpdates data={data} />);
+    const { container } = render(<><LearningUpdates student={data.students[0]} intro="Learning goals" /><BlogHome data={data} /></>);
     const buttons = screen.getAllByRole("button", { name: "Load YouTube video 1" });
     expect(buttons).toHaveLength(2);
     expect(container.querySelector("iframe")).toBeNull();
@@ -72,7 +73,7 @@ describe("Learning progress and teacher journal", () => {
             onChange={setData}
             onNotice={() => {}}
           />
-          <LearningUpdates data={data} />
+          <><LearningUpdates student={data.students[0]} intro="Learning goals" /><BlogHome data={data} /></>
         </>
       );
     }

@@ -11,6 +11,7 @@ import {
   Sparkles,
   Instagram,
   Mail,
+  ChevronDown,
 } from "lucide-react";
 import type { Manifest, Material, Student } from "../shared/content";
 import { base, loadPublic } from "./lib";
@@ -19,53 +20,88 @@ import Admin from "./components/Admin";
 import MaterialViewer from "./components/MaterialViewer";
 import AccessibilityControls from "./components/AccessibilityControls";
 import LearningUpdates from "./components/LearningUpdates";
+import BlogHome from "./components/BlogHome";
 import LearnerSpace from "./components/LearnerSpace";
 import StudentAccountForm, { type StudentSession } from "./components/StudentAccountForm";
 import StudentFiles from "./components/StudentFiles";
 import LiveChat from "./components/LiveChat";
 import ContactForm from "./components/ContactForm";
-import TeacherPortrait from "./components/TeacherPortrait";
+import styled from "styled-components";
 import { pageContent } from "../shared/pageContent";
-type Page = "home" | "about" | "contact" | "admin" | "student-login";
+type Page = "home" | "about" | "contact" | "admin" | "student-login" | "student" | "materials";
+const pageTitles: Record<Page, string> = {
+  home: "Home", about: "About", contact: "Contact", admin: "Teacher’s desk",
+  "student-login": "Student login", student: "Student page", materials: "Learning materials",
+};
+const studentLink = (id: string) => `#/student?id=${encodeURIComponent(id)}`;
+const studentRouteId = () => new URLSearchParams(location.hash.split("?")[1]).get("id") || "";
+
+const StudentMenu = styled.details`
+  position: relative;
+  summary {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    font-size: .875rem;
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  ul {
+    position: absolute;
+    z-index: 8;
+    left: 0;
+    width: max-content;
+    min-width: 11rem;
+    max-width: calc(100vw - 2rem);
+    max-height: 45vh;
+    overflow: auto;
+    list-style: none;
+    margin: 0;
+    padding: .35rem;
+    background: #fffdf8;
+    border: 1px solid #d9dfd4;
+    border-radius: .6rem;
+    box-shadow: 0 12px 28px #263a3425;
+  }
+  a { display: flex; padding: .35rem .65rem; border-radius: .35rem; }
+  a:hover { background: #eaf0e4; }
+  @media (max-width: 36rem) { ul { left: auto; right: 0; } }
+`;
+
+const Wordmark = styled.div`
+  font: clamp(1rem, 2vw, 1.3rem) Georgia, serif;
+  color: #263a34;
+  small { display: block; font: .75rem Arial, sans-serif; margin-top: .25rem; }
+`;
 function route(): Page {
   const p = location.hash
     ? location.hash.slice(2).split("?")[0]
     : location.pathname.match(/\/(admin|about|contact|student-login)\/?$/)?.[1];
-  return p && ["about", "contact", "admin", "student-login"].includes(p) ? (p as Page) : "home";
+  return p && ["about", "contact", "admin", "student-login", "student", "materials"].includes(p) ? (p as Page) : "home";
 }
 export default function App() {
   const [page, setPage] = useState<Page>(route);
   const [adminVisited, setAdminVisited] = useState(page === "admin");
   const [data, setData] = useState<Manifest>();
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(studentRouteId);
   const [studentAccount, setStudentAccount] = useState<StudentSession>();
-  const [appearancePreview, setAppearancePreview] =
-    useState<Student["appearance"]>();
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [view, setView] = useState<Material>();
-  const [studentsOpen, setStudentsOpen] = useState(() =>
-    window.matchMedia
-      ? window.matchMedia("(min-width: 62.001rem)").matches
-      : true,
-  );
-  useEffect(() => {
-    if (!window.matchMedia) return;
-    const media = window.matchMedia("(min-width: 62.001rem)");
-    const change = () => setStudentsOpen(media.matches);
-    media.addEventListener("change", change);
-    return () => media.removeEventListener("change", change);
-  }, []);
+  const studentsMenu = useRef<HTMLDetailsElement>(null);
   const mainRef = useRef<HTMLElement>(null);
-  const previousPage = useRef(page);
+  const previousRoute = useRef(location.hash);
+  const student = page === "student" ? data?.students.find(s => s.id === selected) : undefined;
   useEffect(() => {
-    if (previousPage.current !== page) {
+    if (previousRoute.current !== location.hash) {
       mainRef.current?.focus();
-      previousPage.current = page;
+      previousRoute.current = location.hash;
     }
-    document.title = `${page === "home" ? "Home" : page === "admin" ? "Teacher’s desk" : page === "student-login" ? "Student login" : page === "about" ? "About" : "Contact"} | ${data?.blogName || "English with Natalia Bellos"}`;
-  }, [page, data?.blogName]);
+    document.title = `${student?.name || pageTitles[page]} | ${data?.blogName || "English with Natalia Bellos"}`;
+  }, [page, selected, student?.name, data?.blogName]);
   const close = useCallback(() => setView(undefined), []);
   const reload = () => {
     setError("");
@@ -73,21 +109,6 @@ export default function App() {
       .then(setData)
       .catch((e) => setError(e.message));
   };
-  function chooseStudent(id: string) {
-    setAppearancePreview(undefined);
-    setSelected(id);
-    setPage("home");
-    location.hash = "/";
-    setQuery("");
-    setKind("all");
-    if (window.matchMedia?.("(max-width: 62rem)").matches) {
-      setStudentsOpen(false);
-      requestAnimationFrame(() => {
-        mainRef.current?.focus();
-        mainRef.current?.scrollIntoView({ block: "start" });
-      });
-    }
-  }
   useEffect(() => {
     reload();
     const change = () => {
@@ -95,7 +116,11 @@ export default function App() {
       if (next === "admin") setAdminVisited(true);
       else loadPublic().then(setData).catch(() => {});
       setPage(next);
+      setSelected(next === "student" ? studentRouteId() : "");
+      setQuery("");
+      setKind("all");
       setView(undefined);
+      if (studentsMenu.current) studentsMenu.current.open = false;
     };
     window.addEventListener("hashchange", change);
     window.addEventListener("blog-content-saved", reload);
@@ -104,7 +129,6 @@ export default function App() {
       window.removeEventListener("blog-content-saved", reload);
     };
   }, []);
-  const student = data?.students.find((s) => s.id === selected);
   const accountStudent = data?.students.find(s => s.id === studentAccount?.studentId);
   const copy = pageContent(data?.pageContent);
   const items = (
@@ -136,72 +160,35 @@ export default function App() {
       >
         Skip to main content
       </S.SkipLink>
-      <S.Shell $wide={page === "admin"}>
-        <S.Side hidden={page === "admin"}>
-          <S.Brand>
-            <TeacherPortrait photo={data?.teacherPhoto} stickers={data?.teacherStickers} />
-            <p className="blog-name">
-              {data?.blogName || "English with Natalia Bellos"}
-            </p>
-            <p>{copy.tagline}</p>
-          </S.Brand>
-          <nav aria-labelledby="students-label">
-            <S.StudentNavigation
-              open={studentsOpen}
-              onToggle={(e) => setStudentsOpen(e.currentTarget.open)}
-            >
-              <summary>Students and materials</summary>
-              <S.SideLabel id="students-label">OUR STUDENTS</S.SideLabel>
-              {StudentsList()}
-              <S.Students>
-                {data?.students.map((s) => (
-                  <S.StudentButton
-                    key={s.id}
-                    $active={selected === s.id && page === "home"}
-                    aria-pressed={selected === s.id && page === "home"}
-                    aria-controls={
-                      page === "home" && data && !error
-                        ? "learning-collection"
-                        : undefined
-                    }
-                    onClick={() => chooseStudent(s.id)}
-                  >
-                    <span aria-hidden="true">
-                      {s.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join("")}
-                    </span>
-                    {s.name}
-                    <span aria-hidden="true">›</span>
-                  </S.StudentButton>
-                ))}
-              </S.Students>
-            </S.StudentNavigation>
-          </nav>
-          <S.TeacherNote>
-            “{copy.sidebarQuote}”<small>{copy.sidebarCaption}</small>
-          </S.TeacherNote>
-        </S.Side>
-        <div>
+      <S.Shell>
           <S.Header>
-            <span style={{ fontFamily: "Georgia", fontSize: "1rem" }}> <span style={{ color: "#b11b9d" }}> ✳ </span> 
-              {copy.headerCaption}<span style={{ color: "#b11b9d" }}> ✳</span>
-            </span>
+            <Wordmark>
+              {data?.blogName || "English with Natalia Bellos"}
+              <small>{copy.headerCaption}</small>
+            </Wordmark>
             <nav aria-label="Main navigation">
               {(["home", "about", "contact"] as const).map((p) => (
                 <a
                   key={p}
                   href={p === "home" ? "#/" : `#/${p}`}
                   aria-current={page === p ? "page" : undefined}
-                  onClick={() => {
-                    if (p === "home") setSelected("");
-                  }}
                 >
                   {p[0].toUpperCase() + p.slice(1)}
                 </a>
               ))}
+              <StudentMenu ref={studentsMenu} onKeyDown={event => {
+                if (event.key !== "Escape" || !event.currentTarget.open) return;
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector("summary")?.focus();
+              }}>
+                <summary>Students <ChevronDown size={14} aria-hidden="true" /></summary>
+                <ul aria-label="Student pages">
+                  {data?.students.map(s => (
+                    <li key={s.id}><a href={studentLink(s.id)} aria-current={student?.id === s.id ? "page" : undefined}>{s.name}</a></li>
+                  ))}
+                  <li><a href="#/materials" aria-current={page === "materials" ? "page" : undefined}>All materials</a></li>
+                </ul>
+              </StudentMenu>
               <a href={data?.instagram || "https://www.instagram.com/"} target="_blank" rel="noopener noreferrer" aria-label="Teacher Instagram (opens in a new tab)" title="Instagram"><Instagram size={21} aria-hidden="true" /></a>
               <a href="#/contact" aria-label="Open Gmail contact form" title="Gmail contact form"><Mail size={21} aria-hidden="true" /></a>
               <a
@@ -222,11 +209,9 @@ export default function App() {
             id="main-content"
             ref={mainRef}
             tabIndex={-1}
-            $appearance={
-              (page === "home" || page === "student-login") && student
-                ? appearancePreview || student.appearance
-                : undefined
-            }
+            $appearance={student && (studentAccount?.studentId === student.id
+              ? studentAccount.profile.appearance || student.appearance
+              : student.appearance)}
           >
             {(adminVisited || page === "admin") && data && (
               <div hidden={page !== "admin"}><Admin publicData={data} /></div>
@@ -242,9 +227,8 @@ export default function App() {
                 <h1>My student account</h1>
                 <LearnerSpace key={accountStudent.id} student={accountStudent} account={studentAccount} onLogout={() => setStudentAccount(undefined)} onChange={(appearance) => {
                   setStudentAccount(current => current ? { ...current, profile: { ...current.profile, appearance } } : current);
-                  if (selected === accountStudent.id) setAppearancePreview(appearance);
                 }} />
-                <S.Button $secondary type="button" onClick={() => { chooseStudent(accountStudent.id); setAppearancePreview(studentAccount.profile.appearance); }}>Open my learning page</S.Button>
+                <S.Button $secondary as="a" href={studentLink(accountStudent.id)}>Open my learning page</S.Button>
               </> : <StudentAccountForm onLogin={setStudentAccount} />
             ) : page === "about" ? (
               <S.Panel>
@@ -271,36 +255,28 @@ export default function App() {
                   </S.Notice>
                 )}
               </S.Panel>
+            ) : page === "home" ? (
+              <BlogHome data={data} />
+            ) : page === "student" && !student ? (
+              <S.Panel>
+                <h1>Student page unavailable</h1>
+                <p>Choose a student from the menu or open the materials library.</p>
+                <S.Button as="a" href="#/materials">Browse materials</S.Button>
+              </S.Panel>
             ) : (
               <>
-                <S.Eyebrow>{copy.homeEyebrow}</S.Eyebrow>
-                <S.Hero>
-                  <div>
-                    <S.Chip>
-                      <Sparkles size={12} /> {copy.homeBadge}
-                    </S.Chip>
-                    <h1>
-                      {student ? (
-                        <>
-                          Hello, {student.name.split(" ")[0]}!<br />
-                          {copy.studentTitle}
-                        </>
-                      ) : (
-                        <>
-                          <span style={{ whiteSpace: "pre-line" }}>{copy.homeTitle}</span>
-                        </>
-                      )}
-                    </h1>
-                    <p>
-                      {student
-                        ? copy.studentIntro
-                        : copy.homeIntro}
-                    </p>
-                  </div>
-                  <Garden />
-                </S.Hero>
-                <LearningUpdates data={data} student={student} />
-                {student && <StudentFiles key={student.id} studentId={student.id} />}
+                {student ? (
+                  <>
+                    <S.Hero>
+                      <div>
+                        <h1>{student.name}</h1>
+                        <p>{copy.studentTitle} {copy.studentIntro}</p>
+                      </div>
+                    </S.Hero>
+                    <LearningUpdates student={student} intro={copy.progressIntro} />
+                    <StudentFiles key={student.id} studentId={student.id} />
+                  </>
+                ) : <h1>{copy.collectionTitle}</h1>}
                 <S.Row>
                   <div>
                     <S.Eyebrow style={{ marginBottom: 8 }}>
@@ -311,7 +287,7 @@ export default function App() {
                     <h2 style={{ margin: 0 }}>
                       {student
                         ? "Materials for " + student.name
-                        : copy.collectionTitle}{" "}
+                        : "Learning materials"}{" "}
                       <span
                         style={{ font: "0.875rem Arial", color: "#526147" }}
                       >
@@ -473,55 +449,8 @@ export default function App() {
               <span>{copy.footer}</span>
             </S.Footer>
           </S.Main>
-        </div>
       </S.Shell>
       {view && <MaterialViewer material={view} onClose={close} />}
     </>
-  );
-  function StudentsList() {
-    return (
-      <S.StudentButton
-        $active={!selected && page === "home"}
-        aria-pressed={!selected && page === "home"}
-        aria-controls={
-          page === "home" && data && !error ? "learning-collection" : undefined
-        }
-        onClick={() => chooseStudent("")}
-      >
-        <span>
-          <BookOpen size={15} />
-        </span>
-        All materials
-      </S.StudentButton>
-    );
-  }
-}
-function Garden() {
-  return (
-    <svg width="205" height="205" viewBox="0 0 205 205" aria-hidden="true">
-      <circle cx="109" cy="99" r="82" fill="#e6e6d1" />
-      <path
-        d="M60 147L112 128L166 146L113 167Z"
-        fill="#f8f7ed"
-        stroke="#7c8a65"
-        strokeWidth="2"
-      />
-      <path
-        d="M60 147v12l53 23 53-22v-14l-53 21Z"
-        fill="#b7c49b"
-        stroke="#7c8a65"
-        strokeWidth="2"
-      />
-      <path d="M113 158V65" stroke="#6d835c" strokeWidth="3" />
-      <path
-        d="M113 123Q67 120 77 84Q116 86 113 123M114 101Q151 103 149 69Q113 69 114 101M113 79Q87 68 101 42Q126 53 113 79"
-        fill="#8fa77a"
-      />
-      <path d="M112 138Q140 143 148 116Q119 106 112 138" fill="#b0bc8c" />
-      <path
-        d="M37 58l4-9 4 9 9 4-9 4-4 9-4-9-9-4ZM169 100l3-6 3 6 6 3-6 3-3 6-3-6-6-3Z"
-        fill="#c7a26f"
-      />
-    </svg>
   );
 }
