@@ -57,7 +57,7 @@ afterEach(() => {
 });
 async function start() {
   const result = render(<App />);
-  await screen.findByRole("heading", { name: /Small steps/ });
+  await screen.findByRole("heading", { name: /A curious mind/ });
   return result;
 }
 async function audit(container: HTMLElement) {
@@ -115,7 +115,7 @@ describe("English interface and accessibility", () => {
     student.focus();
     await user.keyboard("{Enter}");
     expect(await screen.findByRole("heading", { name: "Ana Beatriz’s learning progress" })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Teacher’s journal" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Notes from Natalia" })).toBeNull();
     expect(screen.getByText("2 materials found for Ana Beatriz.")).toBeTruthy();
     await user.type(
       screen.getByRole("textbox", { name: "Search materials" }),
@@ -207,7 +207,7 @@ describe("English interface and accessibility", () => {
     await user.click(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: false }));
     expect(screen.getByRole("button", { name: "BTS-inspired seven-member group", pressed: true })).toBeTruthy();
     await user.click(screen.getByRole("link", { name: "Home" }));
-    await screen.findByRole("heading", { name: /Small steps/ });
+    await screen.findByRole("heading", { name: /A curious mind/ });
     expect(screen.queryByRole("button", { name: "BTS-inspired seven-member group" })).toBeNull();
 
     await user.click(screen.getByRole("link", { name: "Teacher login" }));

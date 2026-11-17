@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ArrowDown, Search } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Search, Coffee, Palette, Landmark, Music2, Cat } from "lucide-react";
 import styled from "styled-components";
+import { base } from "../lib";
 import type { Manifest } from "../../shared/content";
 import { pageContent } from "../../shared/pageContent";
 import * as S from "../styles";
@@ -9,46 +10,95 @@ import YouTubeText, { hasYouTubeVideo } from "./YouTubeText";
 
 const Masthead = styled.section`
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(12rem, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
   gap: clamp(2rem, 6vw, 6rem);
   align-items: center;
-  padding: clamp(1.5rem, 6vw, 5rem);
-  border: 1px solid #dce4d5;
-  border-radius: 1.35rem;
-  background: radial-gradient(ellipse at 100% 0%, #e5ecdd, #f8f6ee 68%);
-  color: #263a34;
-  margin-bottom: clamp(2.5rem, 7vw, 5rem);
-  html[data-high-contrast="true"] & { background-image: none; }
-
+  padding-block: clamp(1rem, 4vw, 3.5rem) clamp(2rem, 5vw, 4.5rem);
+  color: #302d2a;
   h1 {
-    font-family: "Instrument Serif", Georgia, serif;
-    font-size: clamp(2.7rem, 6vw, 5.5rem);
-    line-height: 1;
-    letter-spacing: -.035em;
+    font: 500 clamp(3.3rem, 6vw, 6.5rem)/.98 "Cormorant Garamond", Georgia, serif;
+    letter-spacing: -.045em;
     white-space: pre-line;
-    margin: 0 0 1rem;
+    margin: 1rem 0 1.5rem;
+    max-width: 12ch;
   }
-  p { max-width: 42ch; }
-  @media (max-width: 42rem) { grid-template-columns: minmax(0, 1fr); }
+  > div > p { max-width: 40ch; font-size: .95rem; color: #5e584f; }
+  button {
+    margin-top: 1rem;
+    background: #663047;
+    border-color: #663047;
+    border-radius: 3px;
+    padding: .8rem 1.2rem;
+  }
+  button:hover { background: #4f2237; }
+  @media (max-width: 43rem) { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
 `;
 
-const Author = styled.div`
-  min-width: 0;
+const Cover = styled.figure`
+  margin: 0;
+  position: relative;
+  img {
+    width: 100%;
+    aspect-ratio: 1;
+    display: block;
+    object-fit: cover;
+    border-radius: 48% 48% 3px 3px;
+    border: 1px solid #cfc1af;
+  }
+  figcaption {
+    margin-top: .8rem;
+    text-align: right;
+    font: italic 1.1rem "Cormorant Garamond", Georgia, serif;
+    color: #654758;
+  }
+`;
+
+const Kicker = styled.p`
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  font-size: .7rem !important;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: #663047 !important;
+  &::before { content: ""; width: 2rem; height: 1px; background: currentColor; }
+`;
+
+const Interests = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .75rem 2rem;
+  padding: 1.1rem .5rem;
+  border-block: 1px solid #d9cfc2;
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+  color: #61564e;
+  span { display: inline-flex; align-items: center; gap: .6rem; font-size: .75rem; }
+  span:nth-child(4) { color: #76538b; }
+`;
+
+const Editorial = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 17rem);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+  @media (max-width: 52rem) { grid-template-columns: minmax(0, 1fr); }
+`;
+
+const Author = styled.aside`
+  border-top: 3px solid #64735c;
   padding: 1.5rem;
-  text-align: center;
-  border: 1px solid #d2dbc9;
-  border-radius: 8rem 8rem 1rem 1rem;
-  background: #fbfaf4;
-  > div { margin-inline: auto; }
-  > p { margin: .5rem auto 0; }
-  > p:first-of-type { font: 1.4rem Georgia, serif; }
-  > p:last-of-type { color: #465841; font-size: .84rem; }
+  background: #eceadf;
+  > div { margin: 0 auto 1rem; }
+  h2 { font: 500 1.75rem "Cormorant Garamond", Georgia, serif; margin-bottom: .75rem; }
+  p { color: #544f47; font-size: .85rem; }
+  a { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .8rem; color: #663047; }
+  @media (min-width: 52.001rem) { position: sticky; top: 1.5rem; }
 `;
 
 const Journal = styled.section`
-  max-width: 58rem;
-  margin-inline: auto;
-  h2 { margin: 0 0 .75rem; }
+  min-width: 0;
+  h2 { margin: 0 0 .75rem; font: 500 clamp(2rem, 4vw, 3rem) "Cormorant Garamond", Georgia, serif; scroll-margin-top: 1.5rem; }
 `;
 
 const Controls = styled.div`
@@ -64,18 +114,19 @@ const Controls = styled.div`
     flex: 1 1 14rem;
     margin: 0;
   }
-  input { margin: 0; }
+  input { margin: 0; border-radius: 3px; border-color: #c5baad; background: #fcf9f3; }
+  button { border-radius: 3px; }
+  button[aria-pressed="true"] { background: #663047; color: #fff; border-color: #663047; }
 `;
 
 const Entry = styled.article`
   margin: 0 0 1rem;
-  padding: clamp(1rem, 4vw, 2.5rem);
-  border: 1px solid #dfe4d8;
-  border-top: 3px solid #789067;
-  border-radius: .9rem;
-  background: #fffdf8;
-  h3 { margin: 0 0 .4rem; font: clamp(1.45rem, 3vw, 2.25rem) Georgia, serif; }
-  > p { margin: 0 0 1rem; color: #465841; font-size: .88rem; }
+  padding: clamp(1rem, 3vw, 2rem) 0 2rem;
+  border-bottom: 1px solid #d9cfc2;
+  h3 { margin: 0 0 .65rem; font: 500 clamp(1.8rem, 3vw, 2.5rem) "Cormorant Garamond", Georgia, serif; }
+  > p { margin: 0 0 1.5rem; color: #6d6258; font-size: .75rem; }
+  > div { font-size: .95rem; line-height: 1.85; }
+  iframe { border-radius: 3px; }
 `;
 
 const longDate = new Intl.DateTimeFormat("en", { dateStyle: "long", timeZone: "UTC" });
@@ -93,19 +144,30 @@ export default function BlogHome({ data }: { data: Manifest }) {
   return <>
     <Masthead>
       <div>
-        <S.Eyebrow>{copy.homeEyebrow}</S.Eyebrow>
+        <Kicker>{copy.homeEyebrow}</Kicker>
         <h1>{copy.homeTitle}</h1>
         <p>{copy.homeIntro}</p>
-        <S.Button type="button" onClick={() => document.getElementById("teacher-journal-heading")?.focus()}>
+        <S.Button type="button" onClick={() => {
+          const heading = document.getElementById("teacher-journal-heading");
+          heading?.focus({ preventScroll: true });
+          heading?.scrollIntoView({ block: "start" });
+        }}>
           Read the journal <ArrowDown size={16} aria-hidden="true" />
         </S.Button>
       </div>
-      <Author>
-        <TeacherPortrait photo={data.teacherPhoto} stickers={data.teacherStickers} />
-        <p>{data.teacher}</p>
-        <p>{copy.tagline}</p>
-      </Author>
+      <Cover>
+        <img src={`${base}images/natalia-studio.png`} alt="A sleeping cat beside art books, a sketchbook, purple flowers and a cup of tea." width={800} height={800} fetchPriority="high" />
+        <figcaption>A little curiosity. A cup of tea. A world to discover.</figcaption>
+      </Cover>
     </Masthead>
+    <Interests aria-label="Inside Natalia’s journal">
+      <span><Palette size={16} aria-hidden="true" /> Art & creativity</span>
+      <span><Landmark size={16} aria-hidden="true" /> Stories & history</span>
+      <span><Coffee size={16} aria-hidden="true" /> Tea & conversation</span>
+      <span><Music2 size={16} aria-hidden="true" /> A little BTS</span>
+      <span><Cat size={16} aria-hidden="true" /> Feline company</span>
+    </Interests>
+    <Editorial>
     <Journal aria-labelledby="teacher-journal-heading">
       <h2 id="teacher-journal-heading" tabIndex={-1}>{copy.journalTitle}</h2>
       {(data.posts || []).length > 0 && (
@@ -130,5 +192,12 @@ export default function BlogHome({ data }: { data: Manifest }) {
         <S.Notice>{data.posts?.length ? "No posts match these filters." : "New posts will appear here."}</S.Notice>
       )}
     </Journal>
+      <Author aria-labelledby="meet-natalia">
+        <TeacherPortrait photo={data.teacherPhoto} stickers={data.teacherStickers} />
+        <h2 id="meet-natalia">{data.teacher}</h2>
+        <p>English and history teacher, art lover, tea enthusiast. Always curious about the stories that connect us.</p>
+        <a href="#/about">Meet your teacher <ArrowUpRight size={15} aria-hidden="true" /></a>
+      </Author>
+    </Editorial>
   </>;
 }

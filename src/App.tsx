@@ -21,6 +21,8 @@ import MaterialViewer from "./components/MaterialViewer";
 import AccessibilityControls from "./components/AccessibilityControls";
 import LearningUpdates from "./components/LearningUpdates";
 import BlogHome from "./components/BlogHome";
+import WalkingCat from "./components/WalkingCat";
+import Games from "./components/Games";
 import LearnerSpace from "./components/LearnerSpace";
 import StudentAccountForm, { type StudentSession } from "./components/StudentAccountForm";
 import StudentFiles from "./components/StudentFiles";
@@ -28,9 +30,9 @@ import LiveChat from "./components/LiveChat";
 import ContactForm from "./components/ContactForm";
 import styled from "styled-components";
 import { pageContent } from "../shared/pageContent";
-type Page = "home" | "about" | "contact" | "admin" | "student-login" | "student" | "materials";
+type Page = "home" | "about" | "contact" | "admin" | "student-login" | "student" | "materials" | "games";
 const pageTitles: Record<Page, string> = {
-  home: "Home", about: "About", contact: "Contact", admin: "Teacher’s desk",
+  games: "Games", home: "Home", about: "About", contact: "Contact", admin: "Teacher’s desk",
   "student-login": "Student login", student: "Student page", materials: "Learning materials",
 };
 const studentLink = (id: string) => `#/student?id=${encodeURIComponent(id)}`;
@@ -71,15 +73,33 @@ const StudentMenu = styled.details`
 `;
 
 const Wordmark = styled.div`
-  font: clamp(1rem, 2vw, 1.3rem) Georgia, serif;
-  color: #263a34;
-  small { display: block; font: .75rem Arial, sans-serif; margin-top: .25rem; }
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  color: #5c283c;
+  min-width: 0;
+  > span:first-child {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid #8b6070;
+    border-radius: 50% 50% 6px 6px;
+    font: italic 1.65rem "Cormorant Garamond", Georgia, serif;
+  }
+  strong {
+    display: block;
+    font: 600 clamp(1.05rem, 2vw, 1.5rem) "Cormorant Garamond", Georgia, serif;
+    line-height: 1.15;
+  }
+  small { display: block; font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; margin-top: .35rem; }
 `;
 function route(): Page {
   const p = location.hash
     ? location.hash.slice(2).split("?")[0]
-    : location.pathname.match(/\/(admin|about|contact|student-login)\/?$/)?.[1];
-  return p && ["about", "contact", "admin", "student-login", "student", "materials"].includes(p) ? (p as Page) : "home";
+    : location.pathname.match(/\/(admin|about|contact|student-login|games)\/?$/)?.[1];
+  return p && ["about", "contact", "admin", "student-login", "student", "materials", "games"].includes(p) ? (p as Page) : "home";
 }
 export default function App() {
   const [page, setPage] = useState<Page>(route);
@@ -163,11 +183,14 @@ export default function App() {
       <S.Shell>
           <S.Header>
             <Wordmark>
-              {data?.blogName || "English with Natalia Bellos"}
-              <small>{copy.headerCaption}</small>
+              <span aria-hidden="true">N</span>
+              <span>
+                <strong>{data?.blogName || "English with Natalia Bellos"}</strong>
+                <small>{copy.headerCaption}</small>
+              </span>
             </Wordmark>
             <nav aria-label="Main navigation">
-              {(["home", "about", "contact"] as const).map((p) => (
+              {(["home", "about", "contact", "games"] as const).map((p) => (
                 <a
                   key={p}
                   href={p === "home" ? "#/" : `#/${p}`}
@@ -255,6 +278,8 @@ export default function App() {
                   </S.Notice>
                 )}
               </S.Panel>
+            ) : page === "games" ? (
+              <Games />
             ) : page === "home" ? (
               <BlogHome data={data} />
             ) : page === "student" && !student ? (
@@ -451,6 +476,7 @@ export default function App() {
           </S.Main>
       </S.Shell>
       {view && <MaterialViewer material={view} onClose={close} />}
+      {page !== "admin" && <WalkingCat />}
     </>
   );
 }

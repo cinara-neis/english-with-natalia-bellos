@@ -31,7 +31,10 @@ export const Global = createGlobalStyle`
 
 html { font-size: 100%; }
 html[data-large-text="true"] { font-size: 125%; }
-body { font-size: 1rem; }
+body { font-family: "DM Sans", Arial, sans-serif; font-size: 1rem; background: #f7f2e9; color: #302d2a; }
+h1, h2, h3 { font-family: "Cormorant Garamond", Georgia, serif; }
+html { scroll-behavior: smooth; }
+[hidden] { display: none !important; }
 button, input, select { min-height: 44px; }
 button, a { -webkit-tap-highlight-color: transparent; }
 header nav a, aside > a, article footer a { min-height: 44px; display: inline-flex; align-items: center; }
@@ -71,38 +74,39 @@ export const Shell = styled.div`
   min-height: 100vh;
 `;
 export const Header = styled.header`
-  min-height: 88px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid #e9e9df;
+  min-height: 106px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px clamp(16px, 4vw, 48px);
-  gap: 15px;
+  flex-wrap: wrap;
+  padding: 1.25rem max(1.25rem, calc((100vw - 1254px) / 2));
+  gap: 1.1rem 2rem;
+  border-bottom: 1px solid #d9cfc2;
+  background: #f7f2e9;
   nav {
     display: flex;
-    gap: 8px 24px;
+    align-items: center;
+    gap: .25rem 1.25rem;
     flex-wrap: wrap;
     min-width: 0;
   }
   a {
-    gap: 6px;
+    gap: .35rem;
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: .8rem;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
   }
-  a[aria-current="page"] {
-    font-weight: bold;
-    color: #537043;
+  a[aria-current="page"] { color: #762c48; text-decoration: underline; text-underline-offset: .4rem; }
+  a[href="#/admin"] {
+    border: 1px solid #b8a699;
+    border-radius: 3px;
+    padding-inline: .65rem;
   }
   @media (max-width: 36rem) {
-    align-items: flex-start;
-    gap: 8px;
-    nav {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0 12px;
-      width: 100%;
-    }
+    nav { width: 100%; gap: .1rem 1rem; }
+    a { font-size: .75rem; }
   }
 `;
 export const Main = styled.main<{ $appearance?: Student["appearance"] }>`
