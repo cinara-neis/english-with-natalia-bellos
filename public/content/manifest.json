@@ -62,9 +62,17 @@
   ],
   "instagram": "https://www.instagram.com/example/",
   "teacherStickers": [
-    "purple",
     "music",
-    "books"
+    "books",
+    "purple"
   ],
-  "privateLevels": "rYf0Qkm5MLwQcSHZ.XQHUSUWlNU6mieAMY9eHFIL6FnMPhFWkBAK0im33e6zfoOrennRQCTubiYDGR9ZH8q4bDvLAIT6Zg9hoqIZNoWSX476o2pIQ1+/73LT7pbyEGlb4lt+sA8UgVQPNs6dJJDo="
+  "posts": [
+    {
+      "id": "d3ee11b7-17b5-4c64-a753-7692cdd43fac",
+      "title": "teste video",
+      "body": "https://www.youtube.com/watch?v=gdZLi9oWNZg&list=RDgdZLi9oWNZg&start_radio=1",
+      "date": "2026-11-17"
+    }
+  ],
+  "privateLevels": "Y+qTX7FGY1+1msP3.BpXGOV7WIHzw4kO9aQNH13nT22m7ZtqrieYnJaAkD/nTd+5ylrGfYzL/7Rw1Nag8ltu17Tv8eRdKusu/XPo0b0umDH2S6x3JZxLnnHTZ7qkq3fPpMKcl+moVYCRlwHnP1no="
 }
